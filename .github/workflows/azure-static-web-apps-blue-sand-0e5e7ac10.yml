@@ -1,58 +1,74 @@
-name: Azure Static Web Apps CI/CD
+name: Deploy form to Azure Static Web Apps
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: azure-static-web-apps-production
+  cancel-in-progress: true
 
 jobs:
-  build_and_deploy_job:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+  build_and_deploy:
     runs-on: ubuntu-latest
-    name: Build and Deploy Job
-    permissions:
-       id-token: write
-       contents: read
+    name: Build and deploy form
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          submodules: true
-          lfs: false
-      - name: Install OIDC Client from Core Package
-        run: npm install @actions/core@1.6.0 @actions/http-client
-      - name: Get Id Token
+          python-version: "3.12"
+
+      - name: Install generator dependency
+        run: python -m pip install openpyxl
+
+      - name: Generate the form
+        run: |
+          mkdir -p _site
+          python form/generate_form.py MASTER.xlsx _site/index.html --expires-on ""
+
+      - name: Ask search engines not to index the form
+        run: |
+          echo "User-agent: *" > _site/robots.txt
+          echo "Disallow: /" >> _site/robots.txt
+
+      - name: Include Azure access configuration if present
+        run: |
+          if [ -f staticwebapp.config.json ]; then
+            cp staticwebapp.config.json _site/staticwebapp.config.json
+          fi
+
+      - name: Verify generated HTML exists
+        run: test -s _site/index.html
+
+      - name: Install authentication dependency
+        run: npm install --no-save @actions/core@1.6.0 @actions/http-client
+
+      - name: Get GitHub identity token
         uses: actions/github-script@v6
         id: idtoken
         with:
-           script: |
-               const coredemo = require('@actions/core')
-               return await coredemo.getIDToken()
-           result-encoding: string
-      - name: Build And Deploy
-        id: builddeploy
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLUE_SAND_0E5E7AC10 }}
-          action: "upload"
-          ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
-          # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
-          app_location: "/" # App source code path
-          api_location: "" # Api source code path - optional
-          output_location: "" # Built app content directory - optional
-          github_id_token: ${{ steps.idtoken.outputs.result }}
-          ###### End of Repository/Build Configurations ######
+          script: |
+            const core = require('@actions/core');
+            return await core.getIDToken();
+          result-encoding: string
 
-  close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    name: Close Pull Request Job
-    steps:
-      - name: Close Pull Request
-        id: closepullrequest
+      - name: Deploy to Azure
         uses: Azure/static-web-apps-deploy@v1
         with:
-          action: "close"
+          # Replace this line with the SAME token line from your existing workflow.
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLUE_SAND_0E5E7AC10 }}
+          github_id_token: ${{ steps.idtoken.outputs.result }}
+          action: "upload"
+          app_location: "_site"
+          api_location: ""
+          output_location: ""
+          skip_app_build: true
