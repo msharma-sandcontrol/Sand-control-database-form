@@ -49,15 +49,11 @@ jobs:
       - name: Verify generated HTML exists
         run: test -s _site/index.html
 
-      - name: Install authentication dependency
-        run: npm install --no-save @actions/core@1.6.0 @actions/http-client
-
       - name: Get GitHub identity token
         uses: actions/github-script@v6
         id: idtoken
         with:
           script: |
-            const core = require('@actions/core');
             return await core.getIDToken();
           result-encoding: string
 
