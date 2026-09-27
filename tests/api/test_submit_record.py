@@ -103,3 +103,73 @@ def test_submit_requires_at_least_one_completion_interval(client, seeded_org, ma
     payload["completion_intervals"] = []
     resp = client.post("/records", json=payload, headers=_auth(token))
     assert resp.status_code == 422
+
+
+def _set_unit_system(payload: dict, system: str) -> None:
+    payload["well"].setdefault("General Information", {})["Data Origin & Disclosure"] = {"Unit System": system}
+
+
+def _identification(payload: dict) -> dict:
+    return payload["well"]["Well Specific"]["Well & Field Identification"]
+
+
+def test_submit_value_with_explicit_unit_stores_both(client, seeded_org, db_session, make_payload):
+    _, token = seeded_org
+    payload = make_payload()
+    _identification(payload)["Water depth"] = {"value": 300, "unit": "m"}
+    resp = client.post("/records", json=payload, headers=_auth(token))
+    assert resp.status_code == 201, resp.text
+
+    from db.models import Well
+
+    well = db_session.get(Well, resp.json()["id"])
+    assert (float(well.water_depth), well.water_depth_unit) == (300, "m")
+
+
+def test_submit_bare_value_is_read_in_the_records_unit_system(client, seeded_org, db_session, make_payload):
+    # The well's Unit System applies to the whole record, sand bodies included.
+    _, token = seeded_org
+    payload = make_payload()
+    _set_unit_system(payload, "Metric Unit")
+    _identification(payload)["Water depth"] = 300
+    payload["completion_intervals"][0]["sand_bodies"][0] = {
+        "Reservoir Characterization": {"Reservoir Rock and Fluid Properties": {"Virgin Reservoir Pressure": 20684}},
+    }
+    resp = client.post("/records", json=payload, headers=_auth(token))
+    assert resp.status_code == 201, resp.text
+
+    from db.models import Well
+
+    well = db_session.get(Well, resp.json()["id"])
+    assert well.unit_system == "Metric Unit"
+    assert well.water_depth_unit == "m"
+    assert well.completion_intervals[0].sand_bodies[0].virgin_reservoir_pressure_unit == "kPa"
+
+
+def test_submit_bare_value_without_unit_system_is_in_field_units(client, seeded_org, db_session, make_payload):
+    _, token = seeded_org
+    resp = client.post("/records", json=make_payload(), headers=_auth(token))
+    assert resp.status_code == 201, resp.text
+
+    from db.models import Well
+
+    well = db_session.get(Well, resp.json()["id"])
+    assert well.unit_system is None  # stored as submitted -- the per-field units are what's authoritative
+    assert well.water_depth_unit == "ft"
+
+
+def test_submit_unit_the_field_does_not_offer_returns_422(client, seeded_org, make_payload):
+    _, token = seeded_org
+    payload = make_payload()
+    _identification(payload)["Water depth"] = {"value": 300, "unit": "furlong"}
+    resp = client.post("/records", json=payload, headers=_auth(token))
+    assert resp.status_code == 422
+    assert "furlong" in resp.text
+
+
+def test_submit_invalid_unit_system_returns_422(client, seeded_org, make_payload):
+    _, token = seeded_org
+    payload = make_payload()
+    _set_unit_system(payload, "Imperial Unit")
+    resp = client.post("/records", json=payload, headers=_auth(token))
+    assert resp.status_code == 422

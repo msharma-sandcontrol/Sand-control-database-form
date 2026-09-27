@@ -32,12 +32,15 @@ def classify_field(row: ParamRow) -> FieldSpec:
     if it == "Dropdown Menu":
         spec = parse_validation_cell(row.data_validation)
         required = bool(spec.get("required")) if isinstance(spec, dict) else False
-        return FieldSpec(kind="select", options=parse_dropdown_options(row.data_validation), required=required)
+        default = spec.get("default") if isinstance(spec, dict) else None
+        return FieldSpec(kind="select", options=parse_dropdown_options(row.data_validation), required=required,
+                         default=default)
     if it == "Boolean":
         spec = parse_validation_cell(row.data_validation)
         required = bool(spec.get("required")) if isinstance(spec, dict) else False
+        default = spec.get("default") if isinstance(spec, dict) else None
         opts = parse_dropdown_options(row.data_validation)
-        return FieldSpec(kind="select", options=opts or ["Yes", "No"], required=required)
+        return FieldSpec(kind="select", options=opts or ["Yes", "No"], required=required, default=default)
     if it == "Short Date":
         spec = parse_validation_cell(row.data_validation)
         required = bool(spec.get("required")) if isinstance(spec, dict) else False
@@ -46,7 +49,7 @@ def classify_field(row: ParamRow) -> FieldSpec:
         spec = parse_validation_cell(row.data_validation)
         return FieldSpec(kind="number", **_number_kwargs(spec if isinstance(spec, dict) else None))
     if it == "Text":
-        multi = parse_multi_number(row.data_validation, row.unit, row.parameter)
+        multi = parse_multi_number(row.data_validation, row.parameter)
         if multi:
             labels, specs = multi
             return FieldSpec(

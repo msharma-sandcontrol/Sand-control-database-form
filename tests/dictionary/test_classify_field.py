@@ -8,7 +8,7 @@ from dictionary.models import ParamRow
 def _row(**overrides) -> ParamRow:
     base = dict(
         row_number=1, scope="Well", category="C", subcategory="S", parameter="P",
-        input_type="Text", unit="", affected_subcategory="", affected_parameter="",
+        input_type="Text", field_unit="", metric_unit="", affected_subcategory="", affected_parameter="",
         data_validation="", tooltip="t", user_comment="",
     )
     base.update(overrides)
@@ -90,11 +90,22 @@ def test_text_blank_data_validation():
 def test_multi_number_text():
     raw = '{["Decimal": {"min": 0}, "Decimal": {"min": 0}, "Decimal": {"min": 0}]}'
     spec = classify_field(_row(
-        input_type="Text", parameter="Mud PSD", unit="D10 / D50 / D90", data_validation=raw,
+        input_type="Text", parameter="Mud PSD D10/D50/D90", field_unit="micron", metric_unit="micron",
+        data_validation=raw,
     ))
     assert spec.kind == "multi_number"
     assert spec.multi_labels == ["D10", "D50", "D90"]
     assert spec.multi_min_values == [0, 0, 0]
+
+
+def test_multi_number_never_takes_labels_from_the_unit_columns():
+    # The unit columns hold the unit every sub-value shares, even when a
+    # slash-delimited cell happens to have the right number of parts.
+    raw = '{["Decimal": {"min": 0}, "Decimal": {"min": 0}]}'
+    spec = classify_field(_row(
+        input_type="Text", parameter="Some Pair", field_unit="stb/d", metric_unit="Sm3/d", data_validation=raw,
+    ))
+    assert spec.multi_labels == ["Value 1", "Value 2"]
 
 
 def test_unrecognized_input_type_defaults_to_text():
@@ -132,6 +143,20 @@ def test_boolean_required_flows_through():
         input_type="Boolean", data_validation='{"List": {"required": True, "options": ["Yes", "No"]}}',
     ))
     assert spec.required is True
+
+
+def test_dropdown_menu_default_flows_through():
+    spec = classify_field(_row(
+        input_type="Dropdown Menu",
+        data_validation='{"List": {"options": ["Field Unit", "Metric Unit"], "default": "Field Unit"}}',
+    ))
+    assert spec.options == ["Field Unit", "Metric Unit"]
+    assert spec.default == "Field Unit"
+
+
+def test_dropdown_menu_without_default():
+    spec = classify_field(_row(input_type="Dropdown Menu", data_validation='{"List": {"options": ["A", "B"]}}'))
+    assert spec.default is None
 
 
 def test_plain_text_required_is_honored():

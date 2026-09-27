@@ -1,6 +1,6 @@
 """Response shape for GET /records/{id} -- mirrors RecordIngest's nested
-Category -> Subcategory -> Parameter -> value shape, built by
-db.mapping.build_record_out().
+Category -> Subcategory -> Parameter -> value shape (a field with a unit comes
+back as {"value": ..., "unit": ...}), built by db.mapping.build_record_out().
 """
 from __future__ import annotations
 

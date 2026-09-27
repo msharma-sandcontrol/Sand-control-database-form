@@ -3,6 +3,14 @@ JSON shape (exactly what the form's "Export as JSON" button produces) and the
 flat {db_column: python_value} dicts the ORM models need -- in both
 directions, driven entirely by db/generated/field_registry.json so there is
 exactly one place that knows what a bucket means.
+
+A Parameter that has a unit takes either a bare value or a {"value": ...,
+"unit": ...} object naming the unit it was entered in (the form always sends
+the object). A bare value is read in the starting unit of the record's unit
+system -- the well's "Unit System" field, else that field's default. Values
+are never converted: a row that offers a choice of units stores the chosen
+one in its own `<column>_unit` column, and a row with a fixed unit needs no
+column since the dictionary already says what it is.
 """
 from __future__ import annotations
 
@@ -12,6 +20,8 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
+
+from dictionary.units import FIELD_UNIT_SYSTEM
 
 REGISTRY_PATH = Path(__file__).resolve().parent / "generated" / "field_registry.json"
 
@@ -37,9 +47,56 @@ for _key, _entry in _REGISTRY.items():
     _scope, _rest = _key.split("::", 1)
     _BY_SCOPE.setdefault(_scope, {})[_rest] = _entry
 
+_UNIT_SYSTEM_ENTRY = next((e for e in _REGISTRY.values() if e["is_unit_system"]), None)
 
-def _coerce(entry: dict, leaf_key: str, value: Any, errors: list[str]) -> dict[str, Any]:
-    """Coerces one leaf `value` per its registry entry; returns {db_column: value}
+
+def resolve_unit_system(well_bucket: dict | None) -> str:
+    """The unit system a record's bare values are read in: the well bucket's
+    "Unit System" value when it names a known system, else that field's
+    dictionary default, else Field Unit (the only unit set before the Metric
+    Unit column existed)."""
+    entry = _UNIT_SYSTEM_ENTRY
+    if entry is None:
+        return FIELD_UNIT_SYSTEM
+    params = ((well_bucket or {}).get(entry["category"]) or {}).get(entry["subcategory"]) or {}
+    value = params.get(entry["parameter"])
+    if isinstance(value, dict):
+        value = value.get("value")
+    if value in entry["options"]:
+        return value
+    return entry["default"] or FIELD_UNIT_SYSTEM
+
+
+DEFAULT_UNIT_SYSTEM = resolve_unit_system(None)
+
+
+def _coerce(entry: dict, leaf_key: str, value: Any, errors: list[str], unit_system: str) -> dict[str, Any]:
+    """Coerces one leaf per its registry entry, value and unit together;
+    returns {db_column: value} (a multi_number field can populate more than
+    one column, and a field with a choice of units also its unit column)."""
+    unit = None
+    if isinstance(value, dict):
+        if "value" not in value or set(value) - {"value", "unit"}:
+            errors.append(f'{leaf_key}: expected a value or {{"value": ..., "unit": ...}}, got {value!r}')
+            return {}
+        value, unit = value["value"], value.get("unit")
+
+    options = entry["unit_options"]
+    if unit in (None, ""):
+        unit = entry["default_units"].get(unit_system)
+    elif unit not in options:
+        errors.append(f"{leaf_key}: unit {unit!r} is not one of {options}" if options
+                      else f"{leaf_key}: this field has no unit, got {unit!r}")
+        return {}
+
+    columns = _coerce_value(entry, leaf_key, value, errors)
+    if columns and entry["unit_column"]:
+        columns[entry["unit_column"]] = unit
+    return columns
+
+
+def _coerce_value(entry: dict, leaf_key: str, value: Any, errors: list[str]) -> dict[str, Any]:
+    """Coerces one bare leaf `value` per its registry entry; returns {db_column: value}
     (a multi_number field can populate more than one column)."""
     if value is None or value == "":
         return {}
@@ -117,11 +174,17 @@ def _to_number(value: Any, db_type: str) -> int | Decimal | None:
         return None
 
 
-def flatten_bucket(bucket: dict[str, dict[str, dict[str, Any]]], scope: str) -> dict[str, Any]:
+def flatten_bucket(
+    bucket: dict[str, dict[str, dict[str, Any]]], scope: str, unit_system: str = DEFAULT_UNIT_SYSTEM,
+) -> dict[str, Any]:
     """Category -> Subcategory -> Parameter -> value, validated against the
     dictionary-derived registry for `scope`, flattened into {db_column: value}.
     Raises MappingError (with every problem found, not just the first) if any
     parameter is unrecognized or any value fails validation.
+
+    Bare values of unit-bearing fields are read in `unit_system`'s starting
+    unit, so a caller persisting a record must pass the record's own
+    (resolve_unit_system of its well bucket). Validity never depends on it.
     """
     index = _BY_SCOPE.get(scope, {})
     flat: dict[str, Any] = {}
@@ -137,7 +200,7 @@ def flatten_bucket(bucket: dict[str, dict[str, dict[str, Any]]], scope: str) -> 
                 if entry is None:
                     errors.append(f"{leaf_key}: not a recognized field for this record level")
                     continue
-                coerced = _coerce(entry, leaf_key, value, errors)
+                coerced = _coerce(entry, leaf_key, value, errors, unit_system)
                 if coerced:
                     provided_keys.add(key)
                 flat.update(coerced)
@@ -157,7 +220,8 @@ def build_record_out(row_values: dict[str, Any], scope: str) -> dict[str, dict[s
     """Inverse of flatten_bucket: given {db_column: value} for one ORM row,
     regroups into Category -> Subcategory -> Parameter -> value, re-merging
     multi_number sub-columns and re-serializing dates/Decimals/bools back to
-    the same JSON-friendly representation the form itself emits.
+    the same JSON-friendly representation the form itself emits -- including
+    {"value": ..., "unit": ...} for every field that has a unit.
     """
     out: dict[str, dict[str, dict[str, Any]]] = {}
     for entry in _REGISTRY.values():
@@ -173,6 +237,10 @@ def build_record_out(row_values: dict[str, Any], scope: str) -> dict[str, dict[s
             if raw is None:
                 continue
             value = _serialize(raw)
+        if entry["unit_options"]:
+            unit_column = entry["unit_column"]
+            unit = row_values.get(unit_column) if unit_column else entry["unit_options"][0]
+            value = {"value": value, "unit": unit}
         cat_bucket = out.setdefault(entry["category"], {})
         subcat_bucket = cat_bucket.setdefault(entry["subcategory"], {})
         subcat_bucket[entry["parameter"]] = value

@@ -4,9 +4,10 @@
 Usage:
     python form/generate_form.py [input.xlsx] [output.html]
 
-Input is the "MasterView" sheet of MASTER.xlsx, 12 columns in this order:
-    Row Number, Scope, Category, Subcategory, Parameter, Input Type, Unit,
-    Affected Subcategory, Affected Parameter, Data Validation, Tooltip, User comment
+Input is the "MasterView" sheet of MASTER.xlsx, 13 columns (found by header):
+    Row Number, Scope, Category, Subcategory, Parameter, Input Type, Field Unit,
+    Metric Unit, Affected Subcategory, Affected Parameter, Data Validation,
+    Tooltip, User comment
 
 The dictionary-parsing layer (ParamRow, FieldSpec, load_dictionary,
 classify_field, and the cell-DSL parsers) lives in the top-level `dictionary`
@@ -33,6 +34,11 @@ See CLAUDE.md for the full data model. Key points this generator relies on:
   (the original convention); a target mapped to `False` means "start
   visible, HIDE when this trigger value is selected" (the newer exclude
   convention). Both can apply to the same target.
+- `Field Unit` / `Metric Unit` give each row's unit per unit system, each
+  cell one label taken verbatim. A row whose two cells match shows its unit
+  as fixed text; any other unit-bearing row gets a two-option unit dropdown.
+  The Well-scope `Unit System` row presets every dropdown to that system's
+  unit; values themselves are never converted. See dictionary/units.py.
 
 Requires: openpyxl (pip install openpyxl)
 """
@@ -59,7 +65,11 @@ from dictionary import (  # noqa: E402
     FieldSpec,
     ParamRow,
     classify_field,
+    classify_units,
+    default_unit_system,
+    find_unit_system_row,
     group_by_category_subcategory,
+    is_unit_system_row,
     load_dictionary,
     parse_affected_cell,
 )
@@ -136,6 +146,10 @@ def build_model(rows: list[ParamRow]) -> dict:
         "subcat_hide": subcat_hide,
         "param_show": param_show,
         "param_hide": param_hide,
+        # Raises ValueError on a malformed Unit System row; None when absent.
+        "unit_system_row": find_unit_system_row(rows),
+        # The system every unit dropdown starts in.
+        "unit_system": default_unit_system(rows),
     }
 
 
@@ -162,9 +176,21 @@ def build_show_hide_attr(category: str, name: str, show_rules: dict, hide_rules:
     return attrs
 
 
-def render_control(row: ParamRow, spec: FieldSpec) -> str:
+def render_option(value: str, selected: bool) -> str:
+    return f'<option value="{esc(value)}"{" selected" if selected else ""}>{esc(value)}</option>'
+
+
+def render_control(row: ParamRow, spec: FieldSpec, unit_system_preset: str | None = None) -> str:
+    """`unit_system_preset` is set only for the Unit System row itself: the
+    system it starts on (see render_unit for what it drives)."""
     dp = esc(row.parameter)
     req_attr = " required" if spec.required else ""
+    if unit_system_preset is not None:
+        # No blank placeholder here, unlike every other select: each unit
+        # dropdown has to start from *some* system, so "no answer" is not a
+        # meaningful state for the preset.
+        options = "".join(render_option(o, o == unit_system_preset) for o in spec.options)
+        return f'<select data-param="{dp}" data-kind="select" data-role="unit-system">{options}</select>'
     if spec.kind == "select":
         # The placeholder is deliberately NOT `disabled`. A disabled option can be
         # the initial selection but can never be chosen again, so a user who picks
@@ -178,9 +204,13 @@ def render_control(row: ParamRow, spec: FieldSpec) -> str:
         #
         # Optional fields label it "(Blank)" rather than "Select...", so the
         # placeholder also says that leaving the field blank is a real answer here.
+        #
+        # A dictionary `default` is pre-selected instead of the placeholder,
+        # which stays reachable for the same reason as above.
         blank_label = "Select..." if spec.required else "(Blank)"
-        options = [f'<option value="" selected>{blank_label}</option>']
-        options += [f'<option value="{esc(o)}">{esc(o)}</option>' for o in spec.options]
+        default = spec.default if spec.default in spec.options else None
+        options = [f'<option value=""{"" if default else " selected"}>{blank_label}</option>']
+        options += [render_option(o, o == default) for o in spec.options]
         return f'<select data-param="{dp}" data-kind="select"{req_attr}>{"".join(options)}</select>'
     if spec.kind == "number":
         attrs = ""
@@ -219,11 +249,30 @@ def render_control(row: ParamRow, spec: FieldSpec) -> str:
     return f'<textarea rows="2"{req_attr} data-param="{dp}" data-kind="text" placeholder="Enter text"></textarea>'
 
 
-def render_field_row(row: ParamRow, param_show: dict, param_hide: dict) -> str:
+def render_unit(row: ParamRow, unit_system: str) -> str:
+    """The unit cell: empty for a unitless row, plain text when the row's
+    Field and Metric units are the same, otherwise a dropdown of the two,
+    starting on `unit_system`'s. `data-unit-defaults` tells the page which
+    unit each system starts on, so the Unit System row can move every
+    dropdown at once.
+    """
+    units = classify_units(row)
+    if not units.options:
+        return '<span class="field-unit"></span>'
+    if not units.selectable:
+        unit = esc(units.options[0])
+        return f'<span class="field-unit" data-unit="{unit}">{unit}</span>'
+    starting_unit = units.default_for(unit_system)
+    options = "".join(render_option(u, u == starting_unit) for u in units.options)
+    defaults = esc(json.dumps(units.defaults, ensure_ascii=False))
+    return (f'<select class="field-unit unit-select" aria-label="Unit for {esc(row.parameter)}" '
+            f'data-unit-defaults="{defaults}">{options}</select>')
+
+
+def render_field_row(row: ParamRow, param_show: dict, param_hide: dict, unit_system: str) -> str:
     spec = classify_field(row)
-    control = render_control(row, spec)
-    show_unit = row.unit and spec.kind != "multi_number"
-    unit_html = f'<span class="field-unit">{esc(row.unit)}</span>' if show_unit else '<span class="field-unit"></span>'
+    control = render_control(row, spec, unit_system if is_unit_system_row(row) else None)
+    unit_html = render_unit(row, unit_system)
     attrs = build_show_hide_attr(row.category, row.parameter, param_show, param_hide)
     req_mark = '<span class="required-mark">*</span>' if spec.required else ""
     tip_html = f'<span class="tt" tabindex="0" data-tip="{esc(row.tooltip)}">?</span>' if row.tooltip else ""
@@ -238,7 +287,8 @@ def render_field_row(row: ParamRow, param_show: dict, param_hide: dict) -> str:
 
 
 def render_subcategory(category: str, subcategory: str, rows: list[ParamRow], model: dict) -> str:
-    field_rows = "".join(render_field_row(r, model["param_show"], model["param_hide"]) for r in rows)
+    field_rows = "".join(render_field_row(r, model["param_show"], model["param_hide"], model["unit_system"])
+                         for r in rows)
     attrs = build_show_hide_attr(category, subcategory, model["subcat_show"], model["subcat_hide"])
     return (f'<section class="subcategory" data-category="{esc(category)}" '
             f'data-subcategory="{esc(subcategory)}"{attrs}>'
@@ -349,12 +399,13 @@ main { max-width: 1280px; margin: 1.5rem auto; padding: 0 1rem; }
 .sand-body-instance.interval-even .field-row { background: var(--sb-even-row); }
 
 .field-grid { display: flex; flex-direction: column; }
-.field-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.4fr) 90px 74px minmax(160px, 1fr); gap: .75rem; align-items: center; padding: .4rem 1rem; border-top: 1px solid #eee; }
+.field-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.4fr) 120px 74px minmax(160px, 1fr); gap: .75rem; align-items: center; padding: .4rem 1rem; border-top: 1px solid #eee; }
 .zone-general .field-row { background: var(--general-row); }
 .zone-well .field-row { background: var(--well-row); }
 .field-name { font-size: .88rem; display: flex; align-items: center; gap: .3rem; }
 .field-rownum { font-family: "Consolas", monospace; font-size: .72rem; color: #888; flex: 0 0 auto; }
 .field-unit { font-size: .8rem; color: #555; }
+select.unit-select { padding: .3rem .35rem; color: var(--ink); }
 .field-action { display: flex; }
 .apply-count-btn { background: var(--header-bg); color: #fff; border: none; border-radius: 4px; padding: .3rem .6rem; cursor: pointer; font-size: .78rem; }
 .apply-count-btn:hover { opacity: .9; }
@@ -409,6 +460,7 @@ JS = """
   const EXPORT_NAME_PARAMS = __EXPORT_NAME_PARAMS__;
   const wellSection = document.getElementById('well-section');
   const sandForm = document.getElementById('sand-form');
+  const unitSystemSelect = document.querySelector('[data-role="unit-system"]');
 
   // Cutoff is inclusive of the whole EXPIRES_ON day in the viewer's local time --
   // the form stays usable through that date and locks starting the next day.
@@ -493,6 +545,34 @@ JS = """
     syncValidationExemptions(root);
   }
 
+  // ---- units ----
+  // A unit dropdown knows which unit each system starts on (data-unit-defaults),
+  // so the Unit System row can move them all at once. Values are never
+  // converted -- the unit is recorded next to whatever number was typed.
+  function unitDefaults(unitSelect) {
+    return JSON.parse(unitSelect.dataset.unitDefaults);
+  }
+  function applyUnitSystem(root, system) {
+    root.querySelectorAll('select.unit-select').forEach((unitSelect) => {
+      const unit = unitDefaults(unitSelect)[system];
+      if (unit) unitSelect.value = unit;
+    });
+  }
+  // How many filled-in fields a switch to `system` would relabel.
+  function countRelabeledValues(system) {
+    return Array.from(sandForm.querySelectorAll('select.unit-select')).filter((unitSelect) => {
+      const unit = unitDefaults(unitSelect)[system];
+      return unit && unitSelect.value !== unit && readFieldValue(unitSelect.closest('.field-row')) !== null;
+    }).length;
+  }
+  // The unit a field's value is in: its dropdown's choice, its fixed unit, or
+  // null for a unitless field.
+  function fieldUnit(fieldRow) {
+    const unit = fieldRow.querySelector('.field-unit');
+    if (!unit) return null;
+    return unit.tagName === 'SELECT' ? unit.value : (unit.dataset.unit || null);
+  }
+
   function setupRepeater({ container, template, addBtn, maxCount, labelSingular, onAdd }) {
     let count = 0;
 
@@ -515,6 +595,9 @@ JS = """
       if (count >= maxCount) return null;
       const node = template.content.cloneNode(true);
       const section = node.querySelector('.interval-instance');
+      // A new block starts in the record's current unit system, not in
+      // whichever one the template was generated with.
+      if (unitSystemSelect) applyUnitSystem(section, unitSystemSelect.value);
       const removeBtn = section.querySelector(':scope > .interval-banner .remove-interval-btn');
       removeBtn.addEventListener('click', () => {
         if (count <= 1) {
@@ -584,6 +667,26 @@ JS = """
   completionRepeater.add();
   wireApplyButton(wellSection, completionRepeater, MAX_COMPLETION);
 
+  // Switching the Unit System moves every unit dropdown -- including ones the
+  // user changed by hand -- to that system's starting unit. Since numbers
+  // already typed would silently change meaning, ask first when any would.
+  if (unitSystemSelect) {
+    let activeUnitSystem = unitSystemSelect.value;
+    unitSystemSelect.addEventListener('change', () => {
+      const next = unitSystemSelect.value;
+      const relabeled = countRelabeledValues(next);
+      if (relabeled > 0 && !confirm(
+        `Switch every unit to ${next}?\\n\\n${relabeled} field(s) already hold a value. ` +
+        'Their numbers will NOT be converted -- only the unit beside them changes -- ' +
+        'so re-check them after switching.')) {
+        unitSystemSelect.value = activeUnitSystem;
+        return;
+      }
+      activeUnitSystem = next;
+      applyUnitSystem(sandForm, next);
+    });
+  }
+
   // ---- export ----
   function readFieldValue(fieldRow) {
     const control = fieldRow.querySelector('[data-kind]');
@@ -612,6 +715,8 @@ JS = """
     });
   }
 
+  // A field with a unit exports as { value, unit }, so the number never
+  // travels without the unit it was entered in.
   function collectBucket(root) {
     const bucket = {};
     walkVisibleFields(root, (sub, fr) => {
@@ -619,9 +724,10 @@ JS = """
       const param = fieldParam(fr);
       const val = readFieldValue(fr);
       if (val === null) return;
+      const unit = fieldUnit(fr);
       bucket[cat] = bucket[cat] || {};
       bucket[cat][subc] = bucket[cat][subc] || {};
-      bucket[cat][subc][param] = val;
+      bucket[cat][subc][param] = unit === null ? val : { value: val, unit };
     });
     return bucket;
   }
@@ -654,7 +760,7 @@ JS = """
         if (val === null && comment === '') return;
         rows.push([sub.dataset.category, sub.dataset.subcategory, fieldParam(fr),
           compIdx, sbIdx, Array.isArray(val) ? val.join(' / ') : (val === null ? '' : val),
-          fr.querySelector('.field-unit').textContent, comment]);
+          fieldUnit(fr) || '', comment]);
       });
     };
     pushRows(wellSection, '', '');
@@ -763,6 +869,13 @@ def render_html(model: dict, max_completion: int = DEFAULT_MAX_COMPLETION,
     else:
         validity_notice = ""
 
+    if model["unit_system_row"]:
+        unit_notice = ("<p>Choose a <strong>Unit System</strong> (Field or Metric) under General Information first: "
+                       "it sets every field's starting unit, and any single field's unit can still be changed from "
+                       "its dropdown. Values are never converted between units.</p>")
+    else:
+        unit_notice = ""
+
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -775,6 +888,7 @@ def render_html(model: dict, max_completion: int = DEFAULT_MAX_COMPLETION,
 <header class="page-header">
   <h1>Sand Control Failure Record Form &mdash; Producer Wells</h1>
   <p>Fill in the fields below, then use Export JSON / Export CSV to save your record. Hover the <strong>?</strong> icon next to a field for guidance.</p>
+  {unit_notice}
   {validity_notice}
   <p id="expired-banner" class="expired-banner" style="display:none;">
     This form has expired and is no longer accepting submissions. Please contact your Sand Control Failure DB
@@ -825,7 +939,10 @@ def main() -> None:
     rows = load_dictionary(input_path)
     if not rows:
         raise SystemExit("No rows found in the dictionary sheet.")
-    model = build_model(rows)
+    try:
+        model = build_model(rows)
+    except ValueError as exc:
+        raise SystemExit(f"Invalid dictionary: {exc}") from exc
     html_out = render_html(model, max_completion=args.max_completion_intervals,
                             max_sand_bodies=args.max_sand_bodies, expires_on=args.expires_on)
 

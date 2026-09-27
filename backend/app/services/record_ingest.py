@@ -9,19 +9,22 @@ from sqlalchemy.orm import Session
 
 from backend.app.schemas.ingest import RecordIngest
 from backend.app.schemas.record_out import CompletionIntervalOut, RecordOut, SandBodyOut
-from db.mapping import build_record_out, flatten_bucket
+from db.mapping import build_record_out, flatten_bucket, resolve_unit_system
 from db.models import CompletionInterval, Organization, SandBody, Well
 
 
 def create_record(db: Session, org: Organization, payload: RecordIngest) -> Well:
     """One DB transaction: well -> its completion_intervals -> their
-    sand_bodies, `ordinal` set to submission order at each level.
+    sand_bodies, `ordinal` set to submission order at each level. The well's
+    Unit System applies to the whole record, so every level reads its bare
+    (unit-less) values in that system.
     """
+    unit_system = resolve_unit_system(payload.well)
     well = Well(
         organization_id=org.id,
         submitted_at=payload.generated_at,
         raw_payload=payload.model_dump(mode="json"),
-        **flatten_bucket(payload.well, scope="well"),
+        **flatten_bucket(payload.well, scope="well", unit_system=unit_system),
     )
     db.add(well)
     db.flush()  # assigns well.id for the FKs below
@@ -30,7 +33,7 @@ def create_record(db: Session, org: Organization, payload: RecordIngest) -> Well
         completion_interval = CompletionInterval(
             well_id=well.id,
             ordinal=comp_ordinal,
-            **flatten_bucket(comp_payload.fields, scope="completion_interval"),
+            **flatten_bucket(comp_payload.fields, scope="completion_interval", unit_system=unit_system),
         )
         db.add(completion_interval)
         db.flush()  # assigns completion_interval.id
@@ -39,7 +42,7 @@ def create_record(db: Session, org: Organization, payload: RecordIngest) -> Well
             sand_body = SandBody(
                 completion_interval_id=completion_interval.id,
                 ordinal=sb_ordinal,
-                **flatten_bucket(sb_bucket, scope="sand_body"),
+                **flatten_bucket(sb_bucket, scope="sand_body", unit_system=unit_system),
             )
             db.add(sand_body)
 

@@ -21,6 +21,8 @@ def validate_bucket(bucket: Bucket, scope: str) -> Bucket:
     problem found, otherwise). The service layer re-flattens the same bucket
     when it's ready to persist -- this function's job is purely validation,
     so db/mapping.py stays the one place that knows what a bucket means.
+    (A bucket can't see the well's Unit System from here, but validity never
+    depends on it; the service resolves it before persisting.)
     """
     try:
         flatten_bucket(bucket, scope=scope)

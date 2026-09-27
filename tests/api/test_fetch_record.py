@@ -23,6 +23,26 @@ def test_fetch_round_trips_submitted_data(client, seeded_org, make_payload):
     assert len(body["completion_intervals"][0]["sand_bodies"]) == 1
 
 
+def test_fetch_returns_every_unit_bearing_value_with_its_unit(client, seeded_org, make_payload):
+    _, token = seeded_org
+    payload = make_payload()
+    payload["well"].setdefault("General Information", {})["Data Origin & Disclosure"] = {"Unit System": "Metric Unit"}
+    ident = payload["well"]["Well Specific"]["Well & Field Identification"]
+    ident["Water depth"] = {"value": 300, "unit": "m"}
+    ident["Well TD, MD"] = {"value": 12000, "unit": "ft"}  # a per-field override of the Metric preset
+    submit_resp = client.post("/records", json=payload, headers=_auth(token))
+    assert submit_resp.status_code == 201, submit_resp.text
+
+    body = client.get(f"/records/{submit_resp.json()['id']}", headers=_auth(token)).json()
+    assert body["well"]["General Information"]["Data Origin & Disclosure"]["Unit System"] == "Metric Unit"
+    fetched = body["well"]["Well Specific"]["Well & Field Identification"]
+    assert fetched["Water depth"] == {"value": 300.0, "unit": "m"}
+    assert fetched["Well TD, MD"] == {"value": 12000.0, "unit": "ft"}
+    # Fixed-unit fields come back with their unit too, whatever was submitted.
+    peak_water_cut = body["well"]["Well Specific"]["Production Performance History"]["Peak water cut"]
+    assert peak_water_cut["unit"] == "%"
+
+
 def test_fetch_unknown_record_returns_404(client, seeded_org):
     _, token = seeded_org
     resp = client.get("/records/999999999", headers=_auth(token))
