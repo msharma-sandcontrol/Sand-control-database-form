@@ -16,7 +16,8 @@ class ParamRow:
     subcategory: str
     parameter: str
     input_type: str
-    unit: str
+    field_unit: str
+    metric_unit: str
     affected_subcategory: str
     affected_parameter: str
     data_validation: str
@@ -32,6 +33,8 @@ class FieldSpec:
     max_value: float | None = None
     step: float | None = None
     required: bool = False
+    # Pre-selected option of a select (the Data Validation `default` modifier).
+    default: str | None = None
     min_length: int | None = None
     max_length: int | None = None
     pattern: str | None = None  # HTML5-compatible regex, e.g. r"^[A-Za-z0-9]+$"

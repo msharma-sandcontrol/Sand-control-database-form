@@ -20,16 +20,19 @@ architecture" below).
 ## File inventory
 
 - `MASTER.xlsx` -- **the source of truth**. Sheet `MasterView`, one row per Parameter
-  (138 currently). Shared input to both `form/generate_form.py` and `db/codegen.py` via
+  (148 currently). Shared input to both `form/generate_form.py` and `db/codegen.py` via
   the `dictionary` package -- nothing else reads it directly.
 - `dictionary/` -- the shared parser for `MASTER.xlsx`. Owns the data model (`ParamRow`,
-  `FieldSpec`), the cell-DSL parsers, and `classify_field()`. Both `form/` and `db/`
-  import from here rather than each maintaining their own interpretation of what a
-  dictionary cell means.
+  `FieldSpec`, `UnitSpec`), the cell-DSL parsers, `classify_field()`, and the unit
+  handling in `dictionary/units.py` (`classify_units()`, the `Unit System` preset). Both
+  `form/` and `db/` import from here rather than each maintaining their own
+  interpretation of what a dictionary cell means.
 - `form/generate_form.py` -- reads `MASTER.xlsx` (via `dictionary`) and writes a
   standalone, no-backend, client-side HTML intake form.
 - `form/sand_control_form.html` -- generated output (regenerate after any dictionary
   edit; do not hand-edit).
+- `docs/index.html` -- an identical copy of `form/sand_control_form.html`, deployed as
+  a static site straight from `docs/`. Re-copy it after regenerating the form.
 - `db/` -- SQLAlchemy schema, the dictionary-driven codegen pipeline, and Alembic
   migrations. See "Database & API architecture" below.
 - `backend/` -- the FastAPI app: org-token auth, submit/fetch endpoints.
@@ -43,16 +46,20 @@ architecture" below).
 
 ## Input table schema (`MASTER.xlsx`, sheet `MasterView`)
 
-Columns, in order:
+Columns, in order (the loader finds each by its header text, not its position, and
+fails loudly if a header is missing -- so inserting a column in Excel can't silently
+shift values into the wrong field):
 
 | Column | Meaning |
 |---|---|
+| `Row Number` | 1-based row id, rendered next to every field (zero-padded, e.g. `009`) |
 | `Scope` | `Well`, `Completion Interval {id}`, or `Sand Body {id}` -- see "Scope hierarchy" below |
 | `Category` | Top-level grouping (varies per scope -- e.g. `General Information`, `Well Specific`, `Drilling`, `Completion`, `Reservoir Characterization`) |
 | `Subcategory` | Second-level grouping within a Category |
 | `Parameter` | Field name, shown as the row label |
 | `Input Type` | `Dropdown Menu`, `Text`, `Number`, `Short Date`, or `Boolean` |
-| `Unit` | Display unit (e.g. `ft`, `psi`, `stb/d`), blank if not applicable |
+| `Field Unit` | Unit in oilfield units (e.g. `ft`, `psi`, `stb/d`) -- the original `Unit` column, renamed. Blank if not applicable. See "Units" below |
+| `Metric Unit` | The same Parameter's unit in metric units (e.g. `m`, `kPa`, `Sm3/d`). See "Units" below |
 | `Affected Subcategory` | Conditional-visibility rule targeting a Subcategory (see below) |
 | `Affected Parameter` | Conditional-visibility rule targeting a single Parameter (see below) |
 | `Data Validation` | Constraint/options -- format depends on Input Type, see below |
@@ -67,7 +74,7 @@ Well  (rendered once per record)
       └── Sand Body {id}  (repeatable -- a completion interval has 1+ sand bodies)
 ```
 
-Current row distribution: `Well`=62, `Completion Interval {id}`=47, `Sand Body {id}`=29.
+Current row distribution: `Well`=60, `Completion Interval {id}`=59, `Sand Body {id}`=29.
 Drilling, Completion (incl. Sand Control equipment: Completion Type, Screen Type, Gravel
 Pack details, etc.) live at Completion Interval scope, meaning multiple Sand Bodies
 within one Completion Interval share a single drilling/completion/sand-control design
@@ -100,7 +107,10 @@ plus optional modifiers (`parse_validation_cell`):
   `Whole number` maps to a DB `Integer` column (step=1); `Decimal` to `Numeric`.
 - Dropdown/Boolean options: `{"List": ["Operator", "Service Company", "Report"]}` -- a
   genuine list literal, so option order is preserved directly by `ast.literal_eval` (no
-  order-preserving-regex workaround needed, unlike a set).
+  order-preserving-regex workaround needed, unlike a set). The current sheet nests them
+  under `"options"` so other modifiers can sit alongside: `{"List": {"options": [...],
+  "required": True}}`. `"default": "<option>"` pre-selects that option in the form
+  (the placeholder stays reachable); only the `Unit System` row uses it today.
 - Text, unconstrained: `{"Any Value": {}}`.
 - Multi-number Text fields (sub-values in one cell), e.g. `Mud PSD`: one spec per
   sub-value, each shaped like a normal Data Validation cell -- so sub-values can carry
@@ -109,11 +119,10 @@ plus optional modifiers (`parse_validation_cell`):
   which is not valid literal syntax on its own; `parse_validation_cell` recovers it
   segment-by-segment. A cleanly-written `[{"Decimal": {"min": 0}}, ...]` list-of-specs
   parses directly and is the preferred shape for any *new* multi-number cell. Either
-  way, sub-field labels come from the `Unit` column if it's slash-delimited and the
-  count matches (`D10 / D50 / D90`); otherwise from a trailing slash-delimited run in
-  the Parameter name itself (`Particle Size Distribution D10/D25/D40/D50/D75/D90`);
-  otherwise generic `Value 1`, `Value 2`, ... -- see "Known open items" for the two
-  current cells that fall back to the generic labels.
+  way, sub-field labels come from a trailing slash-delimited run in the Parameter name
+  when its count matches (`PSD D10/D25/D40/D50/D75/D90` -> `D10` ... `D90`), otherwise
+  generic `Value 1`, `Value 2`, .... The unit columns are never read as labels (they
+  once doubled as a label source) -- they hold the one unit all sub-values share.
 
 **`Affected Subcategory` / `Affected Parameter`** -- an older, unchanged trigger ->
 target DSL, placed on the **triggering** row: `{"TriggerValue": {"Target1", "Target2"}}`
@@ -127,10 +136,30 @@ cross category boundaries within the same repeatable block (e.g. `Completion Typ
 revealing a Parameter in a different Category after the `Sand Control` -> `Completion`
 consolidation, see "Known open items").
 
-The parser is fully consistent on the current sheet -- every `Affected Subcategory` /
-`Affected Parameter` cell, and 136 of 138 `Data Validation` cells, parse cleanly via
-plain `ast.literal_eval`; the remaining 2 (both multi-number Text cells) parse via the
-segment-recovery fallback described above. Zero cells fail outright.
+On the current sheet every `Affected Subcategory` / `Affected Parameter` cell, and 143
+of 148 `Data Validation` cells, parse cleanly via plain `ast.literal_eval`; 2 more (both
+multi-number Text cells) parse via the segment-recovery fallback described above. The
+other 3 (rows 20-22) don't match any recognized shape -- see "Known open items".
+
+### Units (`Field Unit` / `Metric Unit` / `Unit System`)
+
+Implemented in `dictionary/units.py`; the form, codegen and API all consume it.
+
+- Every row names its unit in both systems, and each cell is **one unit label, taken
+  verbatim** -- `pptb or lb/mmscf` is a single label, never split into two. So a row
+  offers at most two units: its Field Unit and its Metric Unit.
+- A row whose two cells are the same (`%`, `days`, `L`, `micron`, `md`) has a **fixed**
+  unit: plain text in the form, no DB unit column. Every other unit-bearing row (53
+  currently) is **selectable** between its two. A system's **starting unit** for a row
+  is that system's cell.
+- The Well-scope `Unit System` row (General Information -> Data Origin & Disclosure) is
+  the record-level preset: a dropdown whose options are exactly the two column headers,
+  `Field Unit` / `Metric Unit`, with `"default": "Field Unit"`. It's matched by exact
+  Parameter name. If it's absent, everything starts in field units; if it's present but
+  its options don't parse to exactly those two, both generators fail loudly (a missing
+  closing brace in that cell is the easy way to trigger it).
+- **Values are never converted** between units. A value always travels and is stored
+  with the unit it was entered in, so there's no conversion-factor table to get wrong.
 
 ## Form behavior (`form/generate_form.py` output)
 
@@ -149,6 +178,13 @@ segment-recovery fallback described above. Zero cells fail outright.
   and show an alert instead.
 - Every field gets a "?" tooltip icon (hover/focus) sourced from the `Tooltip` column,
   and a red `*` marker for fields the dictionary marks `required`.
+- **Units**: every selectable-unit row has a two-option unit dropdown (its Field Unit
+  and Metric Unit) next to its input, starting on the preset's unit; a fixed unit is
+  plain text. Changing `Unit System` (which has
+  no blank option) moves every unit dropdown -- hand-changed ones included -- to that
+  system's starting unit. If that would relabel any field that already holds a value,
+  it asks first, because numbers are not converted. Blocks added later (`+ Add ...` or
+  `Apply`) start in the current system, whatever the template was generated with.
 - Category names are never shown as headings inside Completion Interval/Sand Body
   blocks (only Subcategory headings) -- matches the original Main Sheet convention.
 - Conditional visibility (`data-show-if`/`data-hide-if`) is evaluated per block
@@ -156,12 +192,14 @@ segment-recovery fallback described above. Zero cells fail outright.
   independently.
 - **Export as JSON**: `{ generated_at, well: {Category: {Subcategory: {Parameter:
   value}}}, completion_intervals: [ { fields: {...}, sand_bodies: [{...}, ...]
-  }, ... ] }`. This exact shape is also the backend's `POST /records` ingest payload
-  shape (see below) -- wiring the form's export buttons to actually POST to a live API
-  instead of downloading a file is a deliberate next step, not yet built.
+  }, ... ] }`, where a field with a unit (fixed or selectable) exports as `{"value":
+  ..., "unit": ...}` and a unitless one as its bare value. This exact shape is also the
+  backend's `POST /records` ingest payload shape (see below) -- wiring the form's export
+  buttons to actually POST to a live API instead of downloading a file is a deliberate
+  next step, not yet built.
 - **Export as CSV**: long format `Category, Subcategory, Parameter, Completion
-  Interval, Sand Body, Value, Unit` (interval-index columns blank for
-  well-scope rows).
+  Interval, Sand Body, Value, Unit, Comment` (interval-index columns blank for
+  well-scope rows; `Unit` is the unit selected for that row).
 - No backend calls from the static form today -- both exports are client-side (`Blob` +
   download link).
 
@@ -192,14 +230,14 @@ ownership:
   only credential stored; the plaintext token is shown once, at creation time.
 - `well` -- structural/audit columns (`id`, `organization_id`, `created_at`,
   `updated_at`, `submitted_at`, `raw_payload` JSONB) + one column per Well-scope
-  Parameter (62 currently).
+  Parameter (60 currently, `unit_system` among them) + 19 unit columns.
 - `completion_interval` -- `id`, `well_id` (FK, `ON DELETE CASCADE`), `ordinal`
   (1-based submission order, **not** used for referential integrity), timestamps + the
-  ~49 Completion-Interval-scope columns (47 rows; 1 multi-number row expands into 3
-  columns). `UNIQUE(well_id, ordinal)`.
-- `sand_body` -- same pattern, FK to `completion_interval.id`, + the ~33 Sand-Body-scope
-  columns (29 rows; 1 multi-number row expands into 5 columns). `UNIQUE(completion_interval_id,
-  ordinal)`.
+  64 Completion-Interval-scope value columns (59 rows; the 1 multi-number row, Mud PSD,
+  expands into 6) + 19 unit columns. `UNIQUE(well_id, ordinal)`.
+- `sand_body` -- same pattern, FK to `completion_interval.id`, + the 34 Sand-Body-scope
+  value columns (29 rows; PSD expands into 6) + 15 unit columns.
+  `UNIQUE(completion_interval_id, ordinal)`.
 
 Design decisions worth knowing before touching this:
 
@@ -213,6 +251,16 @@ Design decisions worth knowing before touching this:
   ingest layer normalizes `"Yes"`/`"No"` strings to Python `True`/`False` and back.
   Dropdown/Text Parameters stay plain `TEXT`; no per-dropdown lookup tables (~40+
   dropdown fields would be excessive schema surface for centrally-curated value lists).
+- **Units are stored, not converted.** A Parameter offering a choice of units gets a
+  companion `<column>_unit` TEXT column holding the unit its value was entered in
+  (`water_depth` + `water_depth_unit`); a fixed-unit Parameter needs none. A submitted
+  leaf value is either bare or `{"value": ..., "unit": ...}`. A bare value takes the
+  starting unit of the record's `Unit System` (else `Field Unit`) at every level, sand
+  bodies included, and a unit other than the row's two is rejected (422) -- including
+  part of a label, e.g. `pptb` for `pptb or lb/mmscf`. `GET` returns `{"value", "unit"}`
+  for every unit-bearing field. The unit migration backfilled every pre-existing value
+  with its old `Unit` cell, so a NULL unit (returned as `"unit": null`) only arises
+  from data written outside the API.
 - Integer primary keys (not UUID) -- the database is private, not exposing enumeration
   outside org-token-gated access.
 - `GET /records/{id}` is scoped to the requesting org's own records; a record that
@@ -231,14 +279,17 @@ committed, generated-not-hand-edited output:
   `db/models/*.py` via SQLAlchemy's imperative-`Table` + declarative-class pattern.
 - `db/generated/field_registry.json` -- one entry per dictionary row (keyed
   `"scope::category::subcategory::parameter"`), recording its DB column(s), kind,
-  options, min/max/step, and required flag. This is what `db/mapping.py` reads at
+  options and `default`, min/max/step, required flag, units (`unit_options`,
+  `default_units` per system, `unit_column`), and whether it's the `Unit System`
+  preset (`is_unit_system`). This is what `db/mapping.py` reads at
   runtime to validate and flatten/unflatten API payloads (`flatten_bucket` /
   `build_record_out`) -- the same function both the Pydantic validators and the
   persistence service call, so there's exactly one place that knows what a submitted
   "bucket" means.
 
 **Workflow after editing `MASTER.xlsx`**: `python -m db.codegen` -->
-`python form/generate_form.py` --> `cd db && alembic revision --autogenerate -m "..."`
+`python form/generate_form.py` (and re-copy it to `docs/index.html`) --> `cd db &&
+alembic revision --autogenerate -m "..."`
 (hand-review; autogenerate can't detect a rename, only a drop+add) --> `alembic upgrade
 head` --> run tests --> commit the `MASTER.xlsx` diff + regenerated files + migration
 together. CI re-runs the two regeneration commands and fails the build on any diff in
@@ -254,9 +305,12 @@ changed -- not something `--autogenerate` could express as a rename even with a 
 database, so it explicitly drops the old-shape tables and creates the new-shape ones
 rather than attempting an in-place data migration (there's no production data yet to
 preserve -- see "Path to production"). Every migration after these two should go back
-to the normal `--autogenerate` workflow.
+to the normal `--autogenerate` workflow. The next four were still hand-authored for lack
+of a live Postgres; the unit-columns migration (`e1e6d2b8e84e`) is the first generated
+with `--autogenerate`. Its diff was exactly its own 54 columns, which also confirmed
+the hand-authored chain reproduces the models exactly.
 
-Both migrations use explicit `op.create_table()`/`op.drop_table()`/`op.add_column()`
+Those first two migrations use explicit `op.create_table()`/`op.drop_table()`/`op.add_column()`
 calls with literal column lists, **not** `Base.metadata.create_all()`/`drop_all()`
 against the live `db.models`. The initial migration originally did use
 `create_all()`/`drop_all()` (justified the same way -- no live Postgres to hand-transcribe
@@ -280,7 +334,8 @@ and compared against `organizations.api_token_hash`. Routes: `GET /health` (roun
 a real query), `POST /records` (submit -- one transaction: well -> its completion
 intervals -> their sand bodies), `GET /records/{id}` (fetch, org-scoped). The
 ingest payload's shape is the same nested `Category -> Subcategory -> Parameter ->
-value` structure the form's own JSON export produces, modeled as generic nested dicts
+value` structure the form's own JSON export produces (a value may be a `{value, unit}`
+object -- see "Units are stored, not converted" above), modeled as generic nested dicts
 in `backend/app/schemas/ingest.py` rather than ~145 named fields, validated by
 `db/mapping.py`.
 
@@ -359,6 +414,7 @@ company data yet. Remaining work, grouped by when it's needed:
 pip install -e ".[dev]"                    # one-time
 python -m db.codegen                        # reads MASTER.xlsx, writes db/generated/*
 python form/generate_form.py                # reads MASTER.xlsx, writes form/sand_control_form.html
+cp form/sand_control_form.html docs/index.html   # the statically deployed copy
 cd db && alembic revision --autogenerate -m "describe the change" && alembic upgrade head
 ```
 
@@ -369,19 +425,24 @@ See the README for the full local-dev and Docker workflows.
 - **`Chemical Sand Consolidation`**: present as a Subcategory under `Sand Control` in
   the old long-format Data Dictionary (resin/chemical consolidation treatments), absent
   from the current `MasterView`. Confirm whether that was intentional.
-- **`Mud PSD` lost its D10/D50/D90 sub-labels**: its `Unit` cell is now blank (it used to
-  be the slash-delimited `D10 / D50 / D90` that drove sub-field labels) and its
-  Parameter name has no trailing slash-delimited suffix either, so its 3 sub-values now
-  render/store as generic `Value 1`/`Value 2`/`Value 3` (DB columns `mud_psd_value_1`,
-  `_value_2`, `_value_3`) instead of `mud_psd_d10`/`_d50`/`_d90`. Confirm whether the
-  blank `Unit` was intentional; if not, restoring `D10 / D50 / D90` in that cell will
-  restore the specific labels/column names next time the pipeline is regenerated.
-- **`Particle Size Distribution D10/D25/D40/D50/D75/D90`'s `Data Validation` cell has only
-  5 `"Decimal"` entries, not 6**: the Parameter name implies 6 sub-values, but the cell
-  (`{["Decimal": {"min": 0}, ...]}`, 5 repeats) only defines 5, so the count-must-match
-  guard falls back to generic `Value 1`..`Value 5` labels rather than guessing which of
-  the 6 D-labels to drop. Likely a missing 6th `"Decimal": {"min": 0}` entry -- confirm
-  and add it if so.
+- **Rows 20-22 (`Time to first choke back`, `Time to well shut-in due to sand`, `Time to
+  complete well failure`) have an unrecognized `Data Validation` shape**:
+  `{"required": True, "Decimal": {"min": 0}}` puts `required` beside the type rather than
+  inside its modifiers, so the cell parses to no spec. The fields end up
+  unconstrained and optional: the `min: 0` and `required: True` they appear to intend
+  are silently dropped. `{"Decimal": {"min": 0, "required": True}}` would apply both.
+  Confirm they should really be required first, since that changes what the form and
+  API accept.
+- **Numeric rows with no unit that look like they need one**: `Completion Interval
+  Length` (ft / m?), `Drill Bit Size` (inch / cm?), `Mud PSD D10/.../D90` (micron, like
+  the Sand Body `PSD` row), `Shale Reactivity CEC` (meq/100 g?), `Oil Formation Volume
+  Factor (Bo)` (rb/stb / rm3/Sm3?). The skins and the two counters are genuinely
+  dimensionless. Filling both unit cells is enough -- regenerate and autogenerate a
+  migration for any that become selectable.
+- **Unit notation**: `Solution Gas Ratio (Rs)`'s metric unit is `Sm³/Sm³` (superscript)
+  while every other volume unit is written `m3` (`Sm3/d`, `g/cm3`, `kg/m3`). The unit
+  text is what gets stored, so settle on one convention before real data arrives.
+- **`Unit System` has no `Tooltip`**, so it renders without a "?" icon.
 - **Counter-field/repeater relationship**: `Number of Completion Intervals` and `Number
   of sand bodies` are informational only (see "Scope hierarchy" above) -- if a
   stronger guarantee is ever wanted (e.g. rejecting a mismatch between the stated count
@@ -403,4 +464,7 @@ the level holding equipment/design fields is now actually called "Completion Int
 and the level holding per-sand-body reservoir/cleanup fields is now actually called
 "Sand Body"), and `Data Validation` was redone from the `{"Positive Integer": {"min":
 1}}`-style DSL to the Excel-Data-Validation-flavored `{"Whole number": {"min": 1}}`
-style described above.
+style described above. Latest: the single `Unit` column became `Field Unit` + `Metric
+Unit` with a `Unit System` preset row (see "Units"). The two former open items about
+`Mud PSD`/`PSD` falling back to generic sub-labels were resolved by giving both
+Parameter names a `D10/D25/D40/D50/D75/D90` suffix (migration `50f82d7932ac`).

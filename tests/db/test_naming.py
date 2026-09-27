@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from db.naming import MAX_IDENTIFIER_LENGTH, derive_column_names, slugify, strip_multi_suffix
+from db.naming import (
+    MAX_IDENTIFIER_LENGTH,
+    derive_column_names,
+    derive_unit_column_name,
+    slugify,
+    strip_multi_suffix,
+)
 
 
 def test_slugify_basic():
@@ -58,6 +64,23 @@ def test_derive_column_names_multi_number_from_parameter_suffix():
 def test_derive_column_names_rejects_overlong_identifier():
     with pytest.raises(ValueError):
         derive_column_names("x " * 40, "text", [])
+
+
+def test_derive_unit_column_name_plain_field():
+    assert derive_unit_column_name("Water depth", "number") == "water_depth_unit"
+    assert derive_unit_column_name("Oil Rate @ Shut-in", "number") == "oil_rate_shut_in_unit"
+
+
+def test_derive_unit_column_name_multi_number_uses_the_base_slug():
+    assert derive_unit_column_name("PSD D10/D25/D40/D50/D75/D90", "multi_number") == "psd_unit"
+
+
+def test_derive_unit_column_name_rejects_overlong_identifier():
+    # Fits as a value column (59 bytes), but not once "_unit" is appended.
+    parameter = "x" * 59
+    assert derive_column_names(parameter, "number", []) == [parameter]
+    with pytest.raises(ValueError):
+        derive_unit_column_name(parameter, "number")
 
 
 def test_max_identifier_length_matches_postgres_limit():

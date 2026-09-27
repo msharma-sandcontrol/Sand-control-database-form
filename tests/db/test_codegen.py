@@ -21,7 +21,10 @@ GENERATED_FILES = [
 ]
 
 
-def test_codegen_runs_without_error():
+def test_codegen_runs_without_error(tmp_path, monkeypatch):
+    # Into a scratch directory: writing the real db/generated/ here would
+    # also make the drift check below compare fresh output against itself.
+    monkeypatch.setattr(codegen, "GENERATED_DIR", tmp_path)
     per_table = codegen.generate()
     assert set(per_table.keys()) == {"well", "completion_interval", "sand_body"}
     assert len(per_table["well"]) > 0
@@ -60,3 +63,47 @@ def test_multi_number_fields_expand_to_multiple_columns():
         "mud_psd_d10", "mud_psd_d25", "mud_psd_d40", "mud_psd_d50", "mud_psd_d75", "mud_psd_d90",
     ]
     assert entry["db_type"] == "Numeric"
+
+
+def _registry() -> dict:
+    return json.loads((GENERATED_DIR / "field_registry.json").read_text(encoding="utf-8"))
+
+
+def test_selectable_unit_gets_a_unit_column():
+    entry = _registry()["well::Well Specific::Well & Field Identification::Water depth"]
+    assert entry["unit_options"] == ["ft", "m"]
+    assert entry["default_units"] == {"Field Unit": "ft", "Metric Unit": "m"}
+    assert entry["unit_column"] == "water_depth_unit"
+
+
+def test_fixed_unit_has_no_unit_column():
+    entry = _registry()["well::Well Specific::Production Performance History::Peak water cut"]
+    assert entry["unit_options"] == ["%"]
+    assert entry["unit_column"] is None
+
+
+def test_unitless_field_has_no_unit_metadata():
+    entry = _registry()["well::Well Specific::Well & Field Identification::Well type"]
+    assert entry["unit_options"] == []
+    assert entry["default_units"] == {}
+    assert entry["unit_column"] is None
+
+
+def test_unit_columns_are_text_columns_of_their_table():
+    import db.models  # noqa: F401  (populates Base.metadata as a side effect)
+    from db.base import Base
+
+    entries = [e for e in _registry().values() if e["unit_column"]]
+    assert entries
+    for entry in entries:
+        column = Base.metadata.tables[entry["table"]].columns[entry["unit_column"]]
+        assert type(column.type).__name__ == "Text"
+        assert column.nullable
+
+
+def test_unit_system_entry_is_flagged():
+    flagged = [e for e in _registry().values() if e["is_unit_system"]]
+    assert [(e["scope"], e["parameter"], e["db_columns"]) for e in flagged] == [
+        ("well", "Unit System", ["unit_system"]),
+    ]
+    assert flagged[0]["default"] == "Field Unit"

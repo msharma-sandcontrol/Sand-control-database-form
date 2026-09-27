@@ -6,8 +6,9 @@ Validation dialog: a type name plus optional modifiers, e.g.
 True}}`, `{"Whole number": {"min": 1, "max": 10, "required": True}}`, or a
 bare `{"Decimal"}` / `{"Short Date"}` / `{"Any Value": {}}` when there's
 nothing to constrain. `List`/`Boolean` cells nest their option array under
-an `"options"` key alongside any other modifiers (`required`, etc.) rather
-than being the modifier dict directly; the older flat-list shape
+an `"options"` key alongside any other modifiers (`required`, `default` --
+the option pre-selected in the form, etc.) rather than being the modifier
+dict directly; the older flat-list shape
 (`{"List": ["A", "B"]}`, no modifiers possible) still parses too, for any
 cell that hasn't been migrated. They're parsed with ast.literal_eval
 (tolerant of JSON's lowercase true/false/null too, since the cells aren't
@@ -84,7 +85,7 @@ def _single_spec(parsed) -> dict | None:
         return None
     spec = {
         "type": str(type_name), "options": None, "min": None, "max": None, "required": False,
-        "pattern": None, "length": None,
+        "pattern": None, "length": None, "default": None,
     }
     if isinstance(body, list):
         # Legacy shape: {"List": ["A", "B"]} -- the body *is* the option list.
@@ -100,6 +101,7 @@ def _single_spec(parsed) -> dict | None:
         spec["required"] = bool(body.get("required"))
         spec["pattern"] = body.get("pattern")
         spec["length"] = body.get("length")
+        spec["default"] = body.get("default")
     return spec
 
 
@@ -155,11 +157,7 @@ def parse_dropdown_options(raw: str) -> list[str]:
 MULTI_LABEL_SUFFIX_RE = re.compile(r'([A-Za-z0-9]+(?:/[A-Za-z0-9]+)+)$')
 
 
-def _derive_multi_labels(unit: str, parameter: str, n: int) -> list[str]:
-    if unit:
-        unit_tokens = [t.strip() for t in unit.split("/")]
-        if len(unit_tokens) == n:
-            return unit_tokens
+def _derive_multi_labels(parameter: str, n: int) -> list[str]:
     m = MULTI_LABEL_SUFFIX_RE.search(parameter)
     if m:
         name_tokens = m.group(1).split("/")
@@ -168,17 +166,17 @@ def _derive_multi_labels(unit: str, parameter: str, n: int) -> list[str]:
     return [f"Value {i + 1}" for i in range(n)]
 
 
-def parse_multi_number(raw: str, unit: str, parameter: str) -> tuple[list[str], list[dict]] | None:
+def parse_multi_number(raw: str, parameter: str) -> tuple[list[str], list[dict]] | None:
     """(labels, per-sub-value specs) for a multi-number Text cell, or None
-    if `raw` isn't a multi-number cell. Labels come from the Unit column if
-    it's slash-delimited and the count matches, otherwise from a trailing
-    slash-delimited run in the Parameter name, otherwise generic
-    "Value 1", "Value 2", ...
+    if `raw` isn't a multi-number cell. Labels come from a trailing
+    slash-delimited run in the Parameter name when its count matches,
+    otherwise generic "Value 1", "Value 2", ... (The unit columns are never
+    read as labels -- they hold the unit all sub-values share.)
     """
     specs = parse_validation_cell(raw)
     if not isinstance(specs, list) or not specs:
         return None
-    labels = _derive_multi_labels(unit, parameter, len(specs))
+    labels = _derive_multi_labels(parameter, len(specs))
     return labels, specs
 
 

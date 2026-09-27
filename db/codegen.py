@@ -19,7 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from db.naming import derive_column_names  # noqa: E402
+from db.naming import derive_column_names, derive_unit_column_name  # noqa: E402
 from db.type_mapping import sqla_type_for  # noqa: E402
 from dictionary import (  # noqa: E402
     COMPLETION_SCOPE,
@@ -27,6 +27,9 @@ from dictionary import (  # noqa: E402
     WELL_SCOPE,
     ParamRow,
     classify_field,
+    classify_units,
+    find_unit_system_row,
+    is_unit_system_row,
     load_dictionary,
 )
 from dictionary.models import FieldSpec  # noqa: E402
@@ -53,6 +56,10 @@ def _column_type_name(row: ParamRow, spec: FieldSpec) -> str:
 def generate() -> dict[str, list[tuple[str, str, str]]]:
     """Writes db/generated/* and returns {scope_key: [(col_name, type_name, source_parameter), ...]}."""
     rows = load_dictionary(MASTER_XLSX)
+    try:
+        find_unit_system_row(rows)
+    except ValueError as exc:
+        raise CodegenError(str(exc)) from exc
     registry: dict[str, dict] = {}
     per_table_columns: dict[str, list[tuple[str, str, str]]] = {}
 
@@ -63,8 +70,12 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
 
         for row in scope_rows:
             spec = classify_field(row)
+            units = classify_units(row)
             col_names = derive_column_names(row.parameter, spec.kind, spec.multi_labels)
-            for name in col_names:
+            # Only a row offering a choice of units needs to record which one
+            # was used; a fixed unit is implied by the dictionary itself.
+            unit_column = derive_unit_column_name(row.parameter, spec.kind) if units.selectable else None
+            for name in col_names + ([unit_column] if unit_column else []):
                 if name in seen:
                     raise CodegenError(
                         f"column name collision in table {table_name!r}: {name!r} "
@@ -73,6 +84,8 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
                 seen.add(name)
             type_name = _column_type_name(row, spec)
             columns.extend((name, type_name, row.parameter) for name in col_names)
+            if unit_column:
+                columns.append((unit_column, "Text", f"Unit for {row.parameter}"))
 
             registry_key = f"{scope_key}::{row.category}::{row.subcategory}::{row.parameter}"
             registry[registry_key] = {
@@ -85,6 +98,8 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
                 "db_type": type_name,
                 "db_columns": col_names,
                 "options": spec.options,
+                "default": spec.default,
+                "is_unit_system": is_unit_system_row(row),
                 "min_value": spec.min_value,
                 "max_value": spec.max_value,
                 "step": spec.step,
@@ -92,7 +107,9 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
                 "min_length": spec.min_length,
                 "max_length": spec.max_length,
                 "pattern": spec.pattern,
-                "unit": row.unit,
+                "unit_options": units.options,
+                "default_units": units.defaults,
+                "unit_column": unit_column,
             }
 
         per_table_columns[scope_key] = columns

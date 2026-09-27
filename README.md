@@ -55,12 +55,23 @@ Submit a record (replace `<token>` with a token from the backend logs):
 curl -X POST http://localhost:8000/records \
   -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
   -d '{
-        "well": {"Well Specific": {"Well & Field Identification": {
-          "Well name": "TEST-1", "Well identification number": 1
-        }}},
+        "well": {
+          "General Information": {"Data Origin & Disclosure": {"Unit System": "Metric Unit"}},
+          "Well Specific": {"Well & Field Identification": {
+            "Well name (anonymized)": "TEST-1",
+            "Well identification number (anonymized)": "TEST0001",
+            "Water depth": {"value": 300, "unit": "m"}
+          }}
+        },
         "completion_intervals": [{"fields": {}, "sand_bodies": [{}]}]
       }'
 ```
+
+This is abbreviated -- a real submission must include every field the dictionary marks
+required, or the API answers 422 listing each one missing. A field with a unit takes
+either `{"value": ..., "unit": ...}` (the unit must be one the dictionary lists for it)
+or a bare value, which is read in the record's `Unit System` (`Field Unit` if unset).
+Values are stored exactly as entered, with their unit -- never converted.
 
 ## Local development without Docker
 
@@ -80,14 +91,15 @@ uvicorn backend.app.main:app --reload
 ```
 python -m db.codegen              # regenerates db/generated/*.py + field_registry.json
 python form/generate_form.py      # regenerates form/sand_control_form.html
+cp form/sand_control_form.html docs/index.html   # the statically deployed copy
 cd db && alembic revision --autogenerate -m "describe the change"
 # review the generated migration by hand, then:
 alembic upgrade head
 ```
 
 Commit the `MASTER.xlsx` diff, the regenerated `db/generated/*` files, the
-regenerated `form/sand_control_form.html`, and the new migration file
-together. CI re-runs the two regeneration commands and fails the build if
+regenerated `form/sand_control_form.html` (and its `docs/index.html` copy), and
+the new migration file together. CI re-runs the two regeneration commands and fails the build if
 the committed output doesn't match (the "codegen drift check") -- so a
 dictionary edit that wasn't followed by regenerating fails in CI even if
 it's forgotten locally.

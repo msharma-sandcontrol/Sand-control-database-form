@@ -39,7 +39,9 @@ def derive_column_names(parameter: str, kind: str, multi_labels: list[str]) -> l
     A plain field maps to one column named after the Parameter. A
     multi_number field expands into one column per sub-label, prefixed by
     the parameter's own (suffix-stripped) slug, e.g. "Mud PSD" + ["D10",
-    "D50", "D90"] -> ["mud_psd_d10", "mud_psd_d50", "mud_psd_d90"].
+    "D50", "D90"] -> ["mud_psd_d10", "mud_psd_d50", "mud_psd_d90"]. A row
+    with selectable units also gets a unit column -- see
+    derive_unit_column_name.
     """
     if kind == "multi_number":
         base = slugify(strip_multi_suffix(parameter))
@@ -47,9 +49,25 @@ def derive_column_names(parameter: str, kind: str, multi_labels: list[str]) -> l
     else:
         names = [slugify(parameter)]
     for name in names:
-        if len(name.encode("utf-8")) > MAX_IDENTIFIER_LENGTH:
-            raise ValueError(
-                f"derived column name {name!r} ({len(name)} bytes) exceeds Postgres's "
-                f"{MAX_IDENTIFIER_LENGTH}-byte identifier limit (from Parameter {parameter!r})"
-            )
+        _check_identifier_length(name, parameter)
     return names
+
+
+def derive_unit_column_name(parameter: str, kind: str) -> str:
+    """The column recording which unit a value was entered in, for a row that
+    offers a choice of units: "Water depth" -> "water_depth_unit". A
+    multi_number row has one unit for all of its sub-values, so it gets one
+    unit column named after its (suffix-stripped) base slug.
+    """
+    base = slugify(strip_multi_suffix(parameter)) if kind == "multi_number" else slugify(parameter)
+    name = f"{base}_unit"
+    _check_identifier_length(name, parameter)
+    return name
+
+
+def _check_identifier_length(name: str, parameter: str) -> None:
+    if len(name.encode("utf-8")) > MAX_IDENTIFIER_LENGTH:
+        raise ValueError(
+            f"derived column name {name!r} ({len(name)} bytes) exceeds Postgres's "
+            f"{MAX_IDENTIFIER_LENGTH}-byte identifier limit (from Parameter {parameter!r})"
+        )

@@ -2,8 +2,9 @@
 
 The shape is inherently Category -> Subcategory -> Parameter -> value --
 exactly what the form's own "Export as JSON" button produces -- so it's
-modeled as generic nested dicts rather than ~145 named fields.
-db/mapping.py's field_registry-driven flatten_bucket() is what actually
+modeled as generic nested dicts rather than ~145 named fields. A value may
+also be a {"value": ..., "unit": ...} object naming the unit it was entered
+in. db/mapping.py's field_registry-driven flatten_bucket() is what actually
 knows what a valid bucket looks like (see schemas/validation.py).
 """
 from __future__ import annotations
