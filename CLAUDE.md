@@ -31,8 +31,10 @@ architecture" below).
   standalone, no-backend, client-side HTML intake form.
 - `form/sand_control_form.html` -- generated output (regenerate after any dictionary
   edit; do not hand-edit).
-- `docs/index.html` -- an identical copy of `form/sand_control_form.html`, deployed as
-  a static site straight from `docs/`. Re-copy it after regenerating the form.
+- `docs/index.html` -- an identical copy of `form/sand_control_form.html`, which
+  Cloudflare deploys as a static site straight from `docs/` (no GitHub Actions
+  involved). Re-copy it after regenerating the form. Any login/access control for that
+  site is configured in Cloudflare, not in this repo.
 - `db/` -- SQLAlchemy schema, the dictionary-driven codegen pipeline, and Alembic
   migrations. See "Database & API architecture" below.
 - `backend/` -- the FastAPI app: org-token auth, submit/fetch endpoints.
