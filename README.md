@@ -48,10 +48,14 @@ manual liquid/gas basis change asks before clearing a value; changing Well
 type sets the matching basis and clears numbers that cannot be converted.
 Completed exports warn about any remaining populated mismatches; draft saves
 do not. Numeric controls show two decimal places when unfocused, while saved
-JSON/CSV retain the full entered value. Sand-body Fluid Type selects Oil Bo or
-Gas Bg (for Condensate, Wet Gas, and Dry Gas) at row 145, with explicit ratio
-units. See [the conversion table](docs/unit_conversion_review.md) for factors
-and reference conditions.
+JSON/CSV retain the full entered value. Repeated unit switches derive from
+the last value the user entered, so switching back restores its original digits;
+editing the converted number starts a new conversion chain. The API also returns
+database decimals as strings so readback does not lose digits through a JSON
+floating-point number. Sand-body Fluid Type selects Oil Bo or Gas Bg (for
+Condensate, Wet Gas, and Dry Gas) at row 145, with explicit ratio units. See
+[the conversion table](docs/unit_conversion_review.md) for factors and reference
+conditions.
 
 ## Explore the form logic
 

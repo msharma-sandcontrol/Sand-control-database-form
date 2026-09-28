@@ -508,9 +508,23 @@ JS = """
     input.dataset.exactValue = exact;
     input.value = document.activeElement === input ? exact : displayNumber(exact, input);
   }
-  function clearNumericValue(input) { input.dataset.exactValue = ''; input.value = ''; }
+  function clearConversionSource(input) {
+    delete input.dataset.conversionSourceValue;
+    delete input.dataset.conversionSourceUnit;
+  }
+  function clearNumericValue(input) {
+    clearConversionSource(input);
+    input.dataset.exactValue = '';
+    input.value = '';
+  }
   sandForm.addEventListener('input', (event) => {
-    if (event.target.matches('input[type="number"]')) event.target.dataset.exactValue = event.target.value;
+    if (event.target.matches('input[type="number"]')) {
+      // A user edit starts a new conversion chain. Unit switches in that
+      // chain always use this typed value as their source, so switching back
+      // restores it exactly instead of accumulating floating-point roundoff.
+      clearConversionSource(event.target);
+      event.target.dataset.exactValue = event.target.value;
+    }
   });
   sandForm.addEventListener('focusin', (event) => {
     if (event.target.matches('input[type="number"]')) {
@@ -631,9 +645,22 @@ JS = """
       filled.forEach(clearNumericValue);
     } else if (filled.length) {
       filled.forEach((input) => {
-        const canonical = Number(exactNumber(input)) * before.scale + before.offset;
-        const converted = (canonical - after.offset) / after.scale;
-        setNumericValue(input, Number(converted.toPrecision(15)).toString());
+        if (!input.dataset.conversionSourceUnit) {
+          input.dataset.conversionSourceUnit = oldUnit;
+          input.dataset.conversionSourceValue = exactNumber(input);
+        }
+        const sourceUnit = input.dataset.conversionSourceUnit;
+        const sourceValue = input.dataset.conversionSourceValue;
+        if (nextUnit === sourceUnit) {
+          // Preserve the exact digits the user entered, including trailing
+          // zeros, after any number of Field/SI switches.
+          setNumericValue(input, sourceValue);
+        } else {
+          const source = unitChoice(select, sourceUnit);
+          const canonical = Number(sourceValue) * source.scale + source.offset;
+          const converted = (canonical - after.offset) / after.scale;
+          setNumericValue(input, Number(converted.toPrecision(15)).toString());
+        }
       });
     }
     select.value = nextUnit;

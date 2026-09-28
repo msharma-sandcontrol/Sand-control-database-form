@@ -304,7 +304,10 @@ def _serialize(value: Any) -> Any:
     if isinstance(value, bool):
         return "Yes" if value else "No"
     if isinstance(value, Decimal):
-        return float(value)
+        # The form exports numeric values as strings. Keep that representation
+        # on API readback so JSON serialization does not pass an exact database
+        # Decimal through a binary float and change its digits.
+        return str(value)
     if isinstance(value, (date, datetime)):
         return value.isoformat()
     return value

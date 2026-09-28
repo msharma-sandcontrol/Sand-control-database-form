@@ -1,6 +1,8 @@
 """Selected units survive flattening, including blank and hidden fields."""
 from __future__ import annotations
 
+from decimal import Decimal
+
 import pytest
 
 from db.mapping import MappingError, build_record_out, flatten_bucket
@@ -88,7 +90,7 @@ def test_conditional_oil_and_gas_fvf_use_distinct_saved_fields(make_payload):
     assert "oil_formation_volume_factor_bo_at_downhole_conditions" not in gas
     rebuilt = build_record_out(gas, "sand_body")
     assert rebuilt["Reservoir Characterization"]["Reservoir Rock and Fluid Properties"][GAS_FVF] == {
-        "value": 0.003456, "unit": "res ft³/scf",
+        "value": "0.003456", "unit": "res ft³/scf",
     }
     group[OIL_FVF] = {"value": "1.23", "unit": "rb/STB"}
     with pytest.raises(MappingError, match="hidden"):
@@ -106,3 +108,13 @@ def test_bg_reservoir_barrel_unit_is_valid(make_payload):
     group[GAS_FVF] = {"value": "0.001", "unit": "rb/scf"}
     flat = flatten_bucket(sand, "sand_body")
     assert flat["gas_formation_volume_factor_bg_at_downhole_conditions_unit"] == "rb/scf"
+
+
+def test_numeric_api_readback_keeps_decimal_digits():
+    rebuilt = build_record_out({
+        "well_td_md": Decimal("123456789.123456789"),
+        "well_td_md_unit": "ft",
+    }, "well")
+    assert rebuilt["Well Specific"]["Well & Field Identification"]["Well TD, MD"] == {
+        "value": "123456789.123456789", "unit": "ft",
+    }
