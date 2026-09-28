@@ -38,8 +38,30 @@ for _key, _entry in _REGISTRY.items():
     _BY_SCOPE.setdefault(_scope, {})[_rest] = _entry
 
 
+def _unit_basis(rule: dict | None, active_values: dict[str, Any],
+                inherited: dict[str, Any]) -> tuple[str | None, str]:
+    """Return (liquid/gas basis, the answer that chose it) for a unit rule.
+
+    The field's own-scope answer wins. If it is blank, a fallback answer
+    comes from the parent record (a Sand Body's Fluid Type falls back to the
+    well's Well type), matching the form. With neither answered the basis is
+    unknown; the explicit saved unit still says which stream it measures.
+    """
+    if not rule:
+        return None, ""
+    answer = active_values.get(rule["parameter"])
+    if answer not in (None, ""):
+        return rule["by_answer"].get(str(answer)), f"{rule['parameter']} = {answer!r}"
+    fallback = rule.get("fallback")
+    answer = inherited.get(fallback["parameter"]) if fallback else None
+    if answer not in (None, ""):
+        return (fallback["by_answer"].get(str(answer)),
+                f"{fallback['parameter']} = {answer!r} ({rule['parameter']} is blank)")
+    return None, ""
+
+
 def _coerce(entry: dict, leaf_key: str, value: Any, errors: list[str],
-            active_values: dict[str, Any]) -> dict[str, Any]:
+            active_values: dict[str, Any], inherited: dict[str, Any]) -> dict[str, Any]:
     """Validate an explicit unit, then coerce the associated field value."""
     choices = entry.get("unit_choices", [])
     unit = None
@@ -53,10 +75,19 @@ def _coerce(entry: dict, leaf_key: str, value: Any, errors: list[str],
         unit = value.get("unit")
         value = value["value"]
     if choices:
+        allowed = choices
+        basis, reason = _unit_basis(entry.get("unit_basis"), active_values, inherited)
+        if basis:
+            # Well type / Fluid Type decides liquid vs gas; the other stream's
+            # units would describe a different measurement.
+            allowed = [choice for choice in choices if choice["group"] == basis]
         if unit in (None, ""):
-            unit = choices[0]["unit"]
-        if unit not in [choice["unit"] for choice in choices]:
-            errors.append(f"{leaf_key}: unit {unit!r} is not allowed")
+            unit = allowed[0]["unit"]
+        if unit not in [choice["unit"] for choice in allowed]:
+            if basis:
+                errors.append(f"{leaf_key}: unit {unit!r} does not match {reason}")
+            else:
+                errors.append(f"{leaf_key}: unit {unit!r} is not allowed")
             return {}
     elif unit not in (None, ""):
         errors.append(f"{leaf_key}: this field has no unit")
@@ -216,13 +247,25 @@ def _applicable(index: dict[str, dict], bucket: dict) -> tuple[dict[str, bool], 
     return {key: _visible(entry, active_values) for key, entry in entries}, active_values
 
 
-def flatten_bucket(bucket: dict[str, dict[str, dict[str, Any]]], scope: str) -> dict[str, Any]:
+def parent_answers(bucket: dict[str, dict[str, dict[str, Any]]], scope: str) -> dict[str, Any]:
+    """Visible answers in a parent bucket, keyed by Parameter name.
+
+    Passed as flatten_bucket(..., inherited=) for child records whose rules
+    fall back to a parent answer. Hidden answers are dropped, as in the form.
+    """
+    return _applicable(_BY_SCOPE.get(scope, {}), bucket)[1]
+
+
+def flatten_bucket(bucket: dict[str, dict[str, dict[str, Any]]], scope: str,
+                   inherited: dict[str, Any] | None = None) -> dict[str, Any]:
     """Validate fields against the workbook registry and flatten DB values.
 
     A required field only applies when the form would show it. Values sent
     for hidden questions are rejected so hand-built API records cannot carry
-    answers that a browser export would have cleared and omitted.
+    answers that a browser export would have cleared and omitted. `inherited`
+    holds parent answers (see parent_answers) for rules that fall back to them.
     """
+    inherited = inherited or {}
     index = _BY_SCOPE.get(scope, {})
     visible, active_values = _applicable(index, bucket)
     flat: dict[str, Any] = {}
@@ -245,11 +288,11 @@ def flatten_bucket(bucket: dict[str, dict[str, dict[str, Any]]], scope: str) -> 
                     if bare in (None, ""):
                         # Blank hidden fields have no answer, but the selected
                         # unit is still part of the draft state.
-                        flat.update(_coerce(entry, leaf_key, value, errors, active_values))
+                        flat.update(_coerce(entry, leaf_key, value, errors, active_values, inherited))
                         continue
                     errors.append(f"{leaf_key}: hidden by the current form answers")
                     continue
-                coerced = _coerce(entry, leaf_key, value, errors, active_values)
+                coerced = _coerce(entry, leaf_key, value, errors, active_values, inherited)
                 if any(column in coerced for column in entry["db_columns"]):
                     provided_keys.add(key)
                 flat.update(coerced)

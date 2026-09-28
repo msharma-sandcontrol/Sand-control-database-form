@@ -64,7 +64,7 @@ from dictionary import (  # noqa: E402
     load_dictionary,
 )
 from dictionary.conditional_fields import GAS_FVF, OIL_FVF, expand_conditional_rows  # noqa: E402
-from dictionary.units import choices_for  # noqa: E402
+from dictionary.units import BASIS_DRIVERS, basis_driver, choices_for  # noqa: E402
 
 DEFAULT_INPUT = REPO_ROOT / "MASTER.xlsx"
 DEFAULT_OUTPUT = Path(__file__).resolve().parent / "sand_control_form.html"
@@ -229,7 +229,9 @@ def render_unit(row: ParamRow) -> str:
         for choice in choices
     )
     data = esc(json.dumps(choices, ensure_ascii=False))
-    return (f'<select class="field-unit unit-select" aria-label="Unit for {esc(row.parameter)}" '
+    driver = basis_driver(row)
+    basis = f' data-unit-basis="{esc(driver)}"' if driver else ""
+    return (f'<select class="field-unit unit-select" aria-label="Unit for {esc(row.parameter)}"{basis} '
             f'data-unit-choices="{data}" data-current-unit="{esc(choices[0]["unit"])}" '
             f'data-last-field-unit="{esc(choices[0]["unit"])}">{options}</select>')
 
@@ -439,6 +441,7 @@ JS = """
   const CHOICE_DISPLAY = __CHOICE_DISPLAY__;
   const OIL_FVF = __OIL_FVF__;
   const GAS_FVF = __GAS_FVF__;
+  const UNIT_BASIS = __UNIT_BASIS__;
   const wellSection = document.getElementById('well-section');
   const sandForm = document.getElementById('sand-form');
   const unitSystemSelect = document.getElementById('unit-system');
@@ -602,8 +605,9 @@ JS = """
     syncValidationExemptions(root);
   }
 
-  // A populated field may change units only within the same production basis.
-  // Liquid-to-gas is a new measurement, not a geometric relabeling.
+  // Unit choices convert within one production basis. Liquid-to-gas is a new
+  // measurement, not a relabeling, so the basis comes from Well type or Fluid
+  // Type (see syncBasisUnits) and the user picks only Field or SI within it.
   function unitChoices(select) { return JSON.parse(select.dataset.unitChoices); }
   function unitChoice(select, unit) { return unitChoices(select).find((choice) => choice.unit === unit); }
   function fieldUnit(row) {
@@ -637,11 +641,7 @@ JS = """
     const row = select.closest('.field-row');
     const controls = Array.from(row.querySelectorAll('input[data-kind="number"], .mn-input'));
     const filled = controls.filter((input) => exactNumber(input) !== '');
-    if (filled.length && before.group !== after.group) {
-      if (!window.confirm('This changes the liquid/gas measurement basis. The existing number cannot be converted without production-ratio data. Clear it and choose the new basis?')) {
-        select.value = oldUnit;
-        return false;
-      }
+    if (before.group !== after.group) {
       filled.forEach(clearNumericValue);
     } else if (filled.length) {
       filled.forEach((input) => {
@@ -680,47 +680,45 @@ JS = """
     return (choices.find((choice) => choice.group === group &&
       (choice.system === system || choice.system === 'both')) || choices[0]).unit;
   }
-  function wellTypeBasis() {
-    const wellType = findParamField(wellSection, 'Well type').value;
-    return wellType === 'Oil Producer' ? 'liquid' :
-      (wellType === 'Gas Producer' || wellType === 'Gas Condensate Producer' ? 'gas' : null);
+  // Well type decides liquid vs gas for well-level rates and PI. A Sand Body's
+  // PI follows its own Fluid Type, or Well type while Fluid Type is blank.
+  function basisForAnswers(driver, answer, wellType) {
+    return UNIT_BASIS[driver][answer] || UNIT_BASIS['Well type'][wellType] || 'liquid';
   }
-  function syncWellTypeUnits(root) {
-    const basis = wellTypeBasis();
-    if (!basis) return 0;
+  function basisFor(select) {
+    const driver = select.dataset.unitBasis;
+    const root = select.closest('.sand-body-instance') || wellSection;
+    return basisForAnswers(driver, findParamField(root, driver)?.value,
+      findParamField(wellSection, 'Well type').value);
+  }
+  // Offer only the current basis's units. A number entered in the other basis
+  // measured a different production stream and cannot be converted, so it is
+  // cleared; the returned count lets the caller tell the user.
+  function syncBasisUnits(root) {
     let cleared = 0;
-    root.querySelectorAll('select.unit-select').forEach((select) => {
-      const choices = unitChoices(select);
-      if (!choices.some((choice) => choice.group === 'liquid') ||
-          !choices.some((choice) => choice.group === 'gas')) return;
+    root.querySelectorAll('select[data-unit-basis]').forEach((select) => {
+      const basis = basisFor(select);
+      Array.from(select.options).forEach((option) => {
+        option.hidden = option.disabled = unitChoice(select, option.value).group !== basis;
+      });
       const current = unitChoice(select, select.dataset.currentUnit);
       if (current.group === basis) return;
-      const target = choices.find((choice) => choice.group === basis && choice.system === current.system);
-      if (!target) return;
-      // A well-type change is authoritative: old-basis numbers cannot be
-      // converted and must be re-entered. No manual-unit confirmation here.
       select.closest('.field-row').querySelectorAll('input[type="number"]').forEach((input) => {
-        if (exactNumber(input) !== '') { cleared += 1; clearNumericValue(input); }
+        if (exactNumber(input) !== '') cleared += 1;
       });
+      const target = unitChoices(select).find((choice) => choice.group === basis &&
+        (choice.system === current.system || choice.system === 'both'));
       setFieldUnit(select, target.unit);
     });
     updateTopUnitIndicator();
     return cleared;
   }
-  function incompatibleUnits() {
-    const basis = wellTypeBasis();
-    if (!basis) return [];
-    return Array.from(sandForm.querySelectorAll('select.unit-select')).flatMap((select) => {
-      const choice = unitChoice(select, select.dataset.currentUnit);
-      if (!['liquid', 'gas'].includes(choice.group) || choice.group === basis) return [];
-      const row = select.closest('.field-row');
-      if (isRuleHidden(row) || !Array.from(row.querySelectorAll('input[type="number"]'))
-        .some((input) => exactNumber(input) !== '')) return [];
-      const comp = row.closest('.completion-instance');
-      const body = row.closest('.sand-body-instance');
-      const location = body ? `Completion Interval ${comp.dataset.intervalIndex}, Sand Body ${body.dataset.intervalIndex}: ` : '';
-      return [location + fieldParam(row) + ' (' + choice.unit + ')'];
-    });
+  function reportBasisChange(driver, cleared) {
+    const message = cleared ?
+      `Changing ${driver} cleared ${cleared} liquid/gas measurement(s). Re-enter them in the new basis.` : '';
+    document.getElementById('basis-change-status').textContent = message;
+    // Rare, but a silently emptied field is easy to miss further down the form.
+    if (cleared) alert(message);
   }
   function applyBulkUnits(root, system) {
     root.querySelectorAll('select.unit-select').forEach((select) => {
@@ -735,6 +733,10 @@ JS = """
     unitSystemSelect.value = field && si ? lastBulkSystem : (field ? 'Field' : (si ? 'SI' : 'Custom'));
   }
   sandForm.addEventListener('change', (event) => {
+    if (event.target.dataset.param === 'Fluid Type') {
+      reportBasisChange('Fluid Type', syncBasisUnits(event.target.closest('.sand-body-instance')));
+      return;
+    }
     if (!event.target.matches('select.unit-select')) return;
     setFieldUnit(event.target, event.target.value);
     updateTopUnitIndicator();
@@ -792,7 +794,7 @@ JS = """
       renumber();
       evaluateVisibility(section);
       if (onAdd) onAdd(section);
-      syncWellTypeUnits(section);
+      syncBasisUnits(section);
       updateTopUnitIndicator();
       return section;
     }
@@ -848,14 +850,13 @@ JS = """
 
   wellSection.addEventListener('change', (event) => {
     if (event.target.dataset.param === 'Well type') {
-      const cleared = syncWellTypeUnits(sandForm);
-      document.getElementById('basis-change-status').textContent = cleared ?
-        `Changing Well type cleared ${cleared} liquid/gas measurement(s). Re-enter them in the selected basis.` : '';
+      reportBasisChange('Well type', syncBasisUnits(sandForm));
     }
     evaluateVisibility(wellSection);
   });
   evaluateVisibility(wellSection);
   completionRepeater.add();
+  syncBasisUnits(wellSection);
   wireApplyButton(wellSection, completionRepeater, MAX_COMPLETION);
 
   // ---- collect a shared record for both file formats ----
@@ -1126,7 +1127,7 @@ JS = """
     return value !== null && typeof value === 'object' && !Array.isArray(value);
   }
 
-  function validateBucket(bucket, root, commentsOnly) {
+  function validateBucket(bucket, root, commentsOnly, wellType) {
     if (!isObject(bucket)) throw new Error('A field group is not an object.');
     for (const [category, subcategories] of Object.entries(bucket)) {
       if (!isObject(subcategories)) throw new Error('Invalid subcategory in ' + category + '.');
@@ -1140,8 +1141,11 @@ JS = """
             continue;
           }
           const unitElement = row.querySelector('.field-unit');
+          const driver = unitElement.dataset.unitBasis;
+          const basis = driver && basisForAnswers(driver, findBucketParamValue(bucket, driver), wellType);
           const allowedUnits = unitElement.tagName === 'SELECT' ?
-            unitChoices(unitElement).map((choice) => choice.unit) :
+            unitChoices(unitElement).filter((choice) => !basis || choice.group === basis)
+              .map((choice) => choice.unit) :
             (unitElement.dataset.unit ? [unitElement.dataset.unit] : []);
           if (allowedUnits.length) {
             if (!isObject(value) || !Object.hasOwn(value, 'value') ||
@@ -1202,7 +1206,8 @@ JS = """
     const firstComp = document.querySelector('#completion-intervals-container > .completion-instance');
     const completionRoot = firstComp.querySelector('.own-fields');
     const sandRoot = firstComp.querySelector('.sand-body-instance');
-    validateBucket(record.well, wellSection, false);
+    const wellType = findBucketParamValue(record.well, 'Well type');
+    validateBucket(record.well, wellSection, false, wellType);
     const comments = record.comments ?? { well: {}, completion_intervals: record.completion_intervals.map(
       (comp) => ({ fields: {}, sand_bodies: comp.sand_bodies.map(() => ({})) })) };
     if (!isObject(comments) || !Array.isArray(comments.completion_intervals) ||
@@ -1220,10 +1225,10 @@ JS = """
           note.sand_bodies.length !== comp.sand_bodies.length) {
         throw new Error('Comment groups do not match Sand Bodies.');
       }
-      validateBucket(comp.fields, completionRoot, false);
+      validateBucket(comp.fields, completionRoot, false, wellType);
       validateBucket(note.fields, completionRoot, true);
       comp.sand_bodies.forEach((sand, j) => {
-        validateBucket(sand, sandRoot, false);
+        validateBucket(sand, sandRoot, false, wellType);
         validateBucket(note.sand_bodies[j], sandRoot, true);
       });
     });
@@ -1299,7 +1304,7 @@ JS = """
       });
     });
     document.getElementById('basis-change-status').textContent = '';
-    updateTopUnitIndicator();
+    syncBasisUnits(sandForm); // Validated above, so this only refreshes the offered units.
     // A mixed imported record has no saved bulk choice. New repeaters start
     // in Field units deterministically, while existing per-field units stay put.
     lastBulkSystem = unitSystemSelect.value === 'Custom' ? 'Field' : unitSystemSelect.value;
@@ -1366,13 +1371,6 @@ JS = """
   function saveFile(format, draft) {
     if (!draft) {
       if (!reportExactValidity()) return;
-      const conflicts = incompatibleUnits();
-      if (conflicts.length) {
-        const listed = conflicts.slice(0, 10).join('\\n');
-        const more = conflicts.length > 10 ? `\n...and ${conflicts.length - 10} more.` : '';
-        if (!window.confirm('These entered values use a liquid/gas unit that conflicts with Well type:\\n' +
-            listed + more + '\\n\\nContinue exporting anyway?')) return;
-      }
     }
     const record = collectData();
     // The filename helps people distinguish files in a folder; this marker
@@ -1434,6 +1432,7 @@ def render_html(model: dict, max_completion: int = DEFAULT_MAX_COMPLETION,
             .replace("__EXPORT_NAME_PARAMS__", json.dumps(list(EXPORT_NAME_PARAMS)))
             .replace("__CHOICE_DISPLAY__", json.dumps(CHOICE_DISPLAY, ensure_ascii=False))
             .replace("__OIL_FVF__", json.dumps(OIL_FVF))
+            .replace("__UNIT_BASIS__", json.dumps(BASIS_DRIVERS))
             .replace("__GAS_FVF__", json.dumps(GAS_FVF)))
 
     if expires_on:
@@ -1457,7 +1456,7 @@ def render_html(model: dict, max_completion: int = DEFAULT_MAX_COMPLETION,
   <p>Import a saved file, save an unfinished draft, or export a completed record. JSON and CSV are available for both saves. Hover the <strong>?</strong> icon next to a field for guidance.</p>
   <div class="unit-toolbar"><label for="unit-system">Units</label>
     <select id="unit-system" aria-label="Units for the form"><option value="Field" selected>Field</option><option value="SI">SI</option><option value="Custom" disabled>Custom</option></select>
-    <small>Unit changes convert values within one liquid/gas basis. Changing Well type clears incompatible numbers. Standard gas volumes use 60°F and 14.73 psia on both sides.</small>
+    <small>Well type (or a Sand Body's Fluid Type) sets whether sand rates and PI are liquid- or gas-based; changing it clears numbers entered in the other basis. Standard gas volumes use 60°F and 14.73 psia on both sides.</small>
   </div>
   <p id="basis-change-status" role="status" aria-live="polite"></p>
   {validity_notice}

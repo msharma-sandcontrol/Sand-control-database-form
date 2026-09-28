@@ -33,7 +33,7 @@ from dictionary import (  # noqa: E402
 )
 from dictionary.conditional_fields import expand_conditional_rows  # noqa: E402
 from dictionary.models import FieldSpec  # noqa: E402
-from dictionary.units import choices_for  # noqa: E402
+from dictionary.units import basis_rule, choices_for  # noqa: E402
 
 MASTER_XLSX = REPO_ROOT / "MASTER.xlsx"
 GENERATED_DIR = Path(__file__).resolve().parent / "generated"
@@ -108,6 +108,9 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
                 "unit_choices": unit_choices,
                 "unit_column": unit_column,
             }
+            rule = basis_rule(row)
+            if rule:
+                entry["unit_basis"] = rule
             if spec.options_by:
                 entry["options_by"] = spec.options_by
             conditions = {

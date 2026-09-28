@@ -94,5 +94,47 @@ def choices_for(row: ParamRow) -> list[dict]:
     return [_choice(label, "Field", "default", scale, offset), _choice(si, "SI", "default", 1)]
 
 
+# A liquid/gas measurement takes its basis from an answer elsewhere in the
+# record rather than from a per-field choice. Only Field/SI within that basis
+# is selectable, so a number is never silently reinterpreted as the other
+# production stream. The keys must match the driver's workbook options.
+BASIS_DRIVERS = {
+    "Well type": {
+        "Oil Producer": "liquid",
+        "Gas Producer": "gas",
+        "Gas Condensate Producer": "gas",
+    },
+    "Fluid Type": {"Oil": "liquid", "Condensate": "gas", "Wet Gas": "gas", "Dry Gas": "gas"},
+}
+
+
+def basis_driver(row: ParamRow) -> str | None:
+    """The answer that selects liquid or gas units for this row, if any.
+
+    Well and Completion Interval rows follow Well type. A Sand Body row follows
+    its own Fluid Type; the form falls back to Well type while that is blank.
+    """
+    groups = {choice["group"] for choice in choices_for(row)}
+    if not {"liquid", "gas"} <= groups:
+        return None
+    return "Fluid Type" if row.scope.startswith("Sand Body") else "Well type"
+
+
+def basis_rule(row: ParamRow) -> dict | None:
+    """The registry form of basis_driver(), including the Well type fallback.
+
+    A Sand Body answer that is blank inherits the parent well's Well type, so
+    the API needs the fallback spelled out to match the form. Other drivers
+    have none because Well type is the top of the chain.
+    """
+    driver = basis_driver(row)
+    if not driver:
+        return None
+    rule = {"parameter": driver, "by_answer": BASIS_DRIVERS[driver]}
+    if driver != "Well type":
+        rule["fallback"] = {"parameter": "Well type", "by_answer": BASIS_DRIVERS["Well type"]}
+    return rule
+
+
 def option_names(row: ParamRow) -> list[str]:
     return [choice["unit"] for choice in choices_for(row)]

@@ -15,7 +15,7 @@ from db.mapping import MappingError, flatten_bucket
 Bucket = dict[str, dict[str, dict[str, Any]]]
 
 
-def validate_bucket(bucket: Bucket, scope: str) -> Bucket:
+def validate_bucket(bucket: Bucket, scope: str, inherited: dict[str, Any] | None = None) -> Bucket:
     """Validates `bucket` against the dictionary-derived registry for `scope`
     and returns it unchanged if valid (raises ValueError, listing every
     problem found, otherwise). The service layer re-flattens the same bucket
@@ -23,7 +23,7 @@ def validate_bucket(bucket: Bucket, scope: str) -> Bucket:
     so db/mapping.py stays the one place that knows what a bucket means.
     """
     try:
-        flatten_bucket(bucket, scope=scope)
+        flatten_bucket(bucket, scope=scope, inherited=inherited)
     except MappingError as exc:
         raise ValueError("; ".join(exc.errors)) from exc
     return bucket

@@ -43,11 +43,15 @@ See [CLAUDE.md](CLAUDE.md) for the full data model and architecture.
 ## Units and formation volume factors
 
 The form starts in Field units. Each convertible measurement has its own unit
-selector, and the top Field/SI selector converts values across the form. A
-manual liquid/gas basis change asks before clearing a value; changing Well
-type sets the matching basis and clears numbers that cannot be converted.
-Completed exports warn about any remaining populated mismatches; draft saves
-do not. Numeric controls show two decimal places when unfocused, while saved
+selector, and the top Field/SI selector converts values across the form.
+Sand rates and PI are liquid- or gas-based: Well type decides this for the
+well-level fields, and each Sand Body's Fluid Type decides it for that body's
+PI (Well type applies while Fluid Type is blank). Their selectors offer only
+Field or SI within that basis. Changing the deciding answer clears numbers
+entered in the other basis, because they cannot be converted, and a popup
+says how many were cleared. The API applies the same rule, including the
+Well type fallback for Sand Bodies, and rejects a contradicting unit. Numeric
+controls show two decimal places when unfocused, while saved
 JSON/CSV retain the full entered value. Repeated unit switches derive from
 the last value the user entered, so switching back restores its original digits;
 editing the converted number starts a new conversion chain. The API also returns

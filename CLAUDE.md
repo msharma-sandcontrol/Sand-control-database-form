@@ -35,6 +35,11 @@ architecture" below).
   form visibility model; `docs/form_logic_tree.html` is the generated output.
   The explorer shows the current visibility rules and which required questions
   apply to the selected answers.
+- `docs/unit_conversion_review.md` -- every Field/SI unit, conversion factor, and
+  the liquid/gas basis rules (unit logic lives in `dictionary/units.py`).
+- `docs/devlog/` -- per-branch development logs explaining what changed, why, and
+  which alternatives were rejected. Read the relevant one before changing units,
+  visibility parity, or form save/load behavior.
 - `db/` -- SQLAlchemy schema, the dictionary-driven codegen pipeline, and Alembic
   migrations. See "Database & API architecture" below.
 - `backend/` -- the FastAPI app: org-token auth, submit/fetch endpoints.
@@ -257,7 +262,10 @@ committed, generated-not-hand-edited output:
   `build_record_out`) -- the same function both the Pydantic validators and the
   persistence service call. Required fields are enforced only when visible; values
   for hidden fields are rejected. The browser and API therefore evaluate the same
-  workbook rule tree.
+  workbook rule tree. One rule crosses levels: a Sand Body's liquid/gas unit
+  basis follows its Fluid Type, or the well's Well type while Fluid Type is
+  blank, so `RecordIngest` validates Sand Bodies with the well's answers passed
+  as `flatten_bucket(..., inherited=)`.
 
 **Workflow after editing `MASTER.xlsx`**: `python -m db.codegen` -->
 `python form/generate_form.py` --> `python docs/generate_form_logic_tree.py` -->

@@ -11,9 +11,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 from backend.app.schemas.validation import validate_bucket
+from db.mapping import parent_answers
 from dictionary import CURRENT_SCHEMA_VERSION
 
 Bucket = dict[str, dict[str, dict[str, Any]]]
@@ -40,11 +41,6 @@ class CompletionIntervalIngest(BaseModel):
     def _validate_fields(cls, v: Bucket) -> Bucket:
         return validate_bucket(v, scope="completion_interval")
 
-    @field_validator("sand_bodies")
-    @classmethod
-    def _validate_sand_bodies(cls, v: list[Bucket]) -> list[Bucket]:
-        return [validate_bucket(item, scope="sand_body") for item in v]
-
 
 class RecordIngest(BaseModel):
     schema_version: int = Field(strict=True)
@@ -65,6 +61,28 @@ class RecordIngest(BaseModel):
     @classmethod
     def _validate_well(cls, v: Bucket) -> Bucket:
         return validate_bucket(v, scope="well")
+
+    @field_validator("completion_intervals")
+    @classmethod
+    def _validate_sand_bodies(cls, v: list[CompletionIntervalIngest],
+                              info: ValidationInfo) -> list[CompletionIntervalIngest]:
+        # Sand Bodies are validated here rather than on CompletionIntervalIngest
+        # because a blank Fluid Type falls back to the well's Well type for
+        # liquid/gas units, and only this level can see the well. `well` is
+        # declared first, so info.data holds it once it has validated; if it
+        # failed, the request fails anyway and no fallback is applied.
+        well = info.data.get("well")
+        inherited = parent_answers(well, "well") if well is not None else {}
+        errors = []
+        for i, interval in enumerate(v, start=1):
+            for j, sand_body in enumerate(interval.sand_bodies, start=1):
+                try:
+                    validate_bucket(sand_body, scope="sand_body", inherited=inherited)
+                except ValueError as exc:
+                    errors.append(f"Completion Interval {i}, Sand Body {j}: {exc}")
+        if errors:
+            raise ValueError("; ".join(errors))
+        return v
 
     @model_validator(mode="after")
     def _validate_comment_layout(self) -> "RecordIngest":

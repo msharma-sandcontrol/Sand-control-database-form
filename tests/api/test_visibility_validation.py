@@ -112,3 +112,29 @@ def test_schema_version_is_explicit_and_exact(make_payload, version):
     with pytest.raises(ValidationError, match="schema_version"):
         RecordIngest.model_validate(payload)
     assert CURRENT_SCHEMA_VERSION == 0
+
+
+RESERVOIR = ("Reservoir Characterization", "Reservoir Rock and Fluid Properties")
+
+
+@pytest.mark.parametrize(("well_type", "fluid_type", "unit", "accepted"), [
+    ("Oil Producer", None, "stb/d/psi", True),
+    ("Oil Producer", None, "MMSCF/d/psi", False),
+    ("Gas Producer", None, "MMSCF/d/psi", True),
+    ("Gas Producer", None, "Sm³ liquid/d/kPa", False),
+    ("Oil Producer", "Wet Gas", "MMSCF/d/psi", True),
+    ("Gas Producer", "Oil", "MMSCF/d/psi", False),
+])
+def test_sand_body_pi_basis_matches_form(make_payload, well_type, fluid_type, unit, accepted):
+    """A Sand Body's own Fluid Type sets its PI basis; blank falls back to Well type."""
+    payload = make_payload(well_type=well_type)
+    group = payload["completion_intervals"][0]["sand_bodies"][0].setdefault(
+        RESERVOIR[0], {}).setdefault(RESERVOIR[1], {})
+    if fluid_type:
+        group["Fluid Type"] = fluid_type
+    group["Initial PI"] = {"value": "3", "unit": unit}
+    if accepted:
+        assert RecordIngest.model_validate(payload)
+        return
+    with pytest.raises(ValidationError, match="Completion Interval 1, Sand Body 1: .*does not match"):
+        RecordIngest.model_validate(payload)

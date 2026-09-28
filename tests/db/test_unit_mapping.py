@@ -23,7 +23,7 @@ def test_blank_unit_is_stored_and_reconstructed(make_payload):
 
 
 def test_hidden_blank_keeps_unit_but_hidden_answer_is_rejected(make_payload):
-    well = make_payload(sand_failure="No")["well"]
+    well = make_payload(sand_failure="No", well_type="Gas Producer")["well"]
     group = well["Well Specific"]["Sand Production & Well Performance"]
     group["Sand production rate at first choke back"] = {"value": None, "unit": "mg/Sm³ gas"}
     flat = flatten_bucket(well, "well")
@@ -57,7 +57,7 @@ def test_invalid_unit_is_rejected(make_payload):
 
 
 def test_gas_basis_keeps_zero_minimum(make_payload):
-    well = make_payload(sand_failure="Yes")["well"]
+    well = make_payload(sand_failure="Yes", well_type="Gas Producer")["well"]
     group = well["Well Specific"]["Sand Production & Well Performance"]
     group["Sand rate quantification"] = "Measurable"
     group["Sand production rate at first choke back"] = {
@@ -65,6 +65,51 @@ def test_gas_basis_keeps_zero_minimum(make_payload):
     }
     with pytest.raises(MappingError, match="below the minimum"):
         flatten_bucket(well, "well")
+
+
+@pytest.mark.parametrize(("well_type", "allowed", "rejected"), [
+    ("Oil Producer", "stb/d/psi", "MMSCF/d/psi"),
+    ("Gas Condensate Producer", "Sm³ gas/d/kPa", "Sm³ liquid/d/kPa"),
+])
+def test_well_type_sets_liquid_or_gas_units(make_payload, well_type, allowed, rejected):
+    well = make_payload(well_type=well_type)["well"]
+    group = well["Well Specific"]["Sand Production & Well Performance"]
+    group["Initial PI"] = {"value": "2", "unit": allowed}
+    assert flatten_bucket(well, "well")["initial_pi_unit"] == allowed
+    group["Initial PI"]["unit"] = rejected
+    with pytest.raises(MappingError, match="does not match Well type"):
+        flatten_bucket(well, "well")
+
+
+def test_sand_body_pi_follows_its_own_fluid_type(make_payload):
+    sand = make_payload()["completion_intervals"][0]["sand_bodies"][0]
+    group = sand.setdefault("Reservoir Characterization", {}).setdefault(
+        "Reservoir Rock and Fluid Properties", {}
+    )
+    group["Initial PI"] = {"value": "3", "unit": "MMSCF/d/psi"}
+    # With no Fluid Type or parent Well type, only the saved unit states the basis.
+    assert flatten_bucket(sand, "sand_body")["initial_pi_unit"] == "MMSCF/d/psi"
+    # A blank Fluid Type inherits the parent well's Well type, as in the form.
+    with pytest.raises(MappingError, match=r"Well type = 'Oil Producer' \(Fluid Type is blank\)"):
+        flatten_bucket(sand, "sand_body", inherited={"Well type": "Oil Producer"})
+    assert flatten_bucket(sand, "sand_body", inherited={"Well type": "Gas Producer"})
+    group["Fluid Type"] = "Wet Gas"
+    # The Sand Body's own answer outranks the parent's.
+    assert flatten_bucket(sand, "sand_body", inherited={"Well type": "Oil Producer"})
+    assert flatten_bucket(sand, "sand_body")["initial_pi_unit"] == "MMSCF/d/psi"
+    group["Fluid Type"] = "Oil"
+    with pytest.raises(MappingError, match="does not match Fluid Type"):
+        flatten_bucket(sand, "sand_body")
+
+
+def test_basis_drivers_cover_every_workbook_answer():
+    from db.mapping import _REGISTRY
+
+    options = {entry["parameter"]: set(entry["options"]) for entry in _REGISTRY.values()}
+    rules = [entry["unit_basis"] for entry in _REGISTRY.values() if entry.get("unit_basis")]
+    assert rules
+    for rule in rules:
+        assert set(rule["by_answer"]) == options[rule["parameter"]]
 
 
 def test_conditional_oil_and_gas_fvf_use_distinct_saved_fields(make_payload):

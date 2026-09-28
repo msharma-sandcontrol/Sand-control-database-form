@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.schemas.ingest import RecordIngest
 from backend.app.schemas.record_out import CompletionIntervalOut, RecordOut, SandBodyOut
-from db.mapping import build_record_out, flatten_bucket
+from db.mapping import build_record_out, flatten_bucket, parent_answers
 from db.models import CompletionInterval, Organization, SandBody, Well
 
 
@@ -26,6 +26,7 @@ def create_record(db: Session, org: Organization, payload: RecordIngest) -> Well
     )
     db.add(well)
     db.flush()  # assigns well.id for the FKs below
+    well_answers = parent_answers(payload.well, "well")  # e.g. Well type for Sand Body units
 
     for comp_ordinal, comp_payload in enumerate(payload.completion_intervals, start=1):
         completion_interval = CompletionInterval(
@@ -40,7 +41,7 @@ def create_record(db: Session, org: Organization, payload: RecordIngest) -> Well
             sand_body = SandBody(
                 completion_interval_id=completion_interval.id,
                 ordinal=sb_ordinal,
-                **flatten_bucket(sb_bucket, scope="sand_body"),
+                **flatten_bucket(sb_bucket, scope="sand_body", inherited=well_answers),
             )
             db.add(sand_body)
 

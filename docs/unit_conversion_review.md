@@ -13,8 +13,10 @@ at 60°F; the volume factors below assume the same liquid reference conditions
 on both sides. "SI" below means practical engineering metric
 units: unchanged units such as %, days, degrees, L, micron, and md stay as they
 are. A multiplier means `SI value = Field value × multiplier`; temperature
-uses the formula shown. Automatic conversions retain 15 significant digits;
-repeated switches can still accumulate a small floating-point difference.
+uses the formula shown. Each conversion starts from the number the user
+last typed, not from the previous conversion, and keeps 15 significant
+digits. Switching back to the typed unit restores the typed digits exactly,
+however many times the units are switched.
 
 | Workbook row(s) | Field unit | SI unit | Field → SI rule | Review note |
 | --- | --- | --- | --- | --- |
@@ -56,19 +58,23 @@ repeated switches can still accumulate a small floating-point difference.
   reservoir ft³/scf and rb/scf as Field choices, plus m³/Sm³ gas as its metric
   choice. Both FVF alternatives are numbered 145. Sand-body Fluid Type shows
   and saves only Bo for Oil, or Bg for Condensate, Wet Gas, and Dry Gas.
-- Combined liquid/gas fields initially use the liquid Field choice until
-  Well type is selected. Selecting or changing Well type sets their basis to
-  liquid for Oil Producer or gas for Gas/Gas Condensate Producer. Values in
-  the old basis clear because there is no valid conversion without production
-  ratio data. Newly added Sand Bodies follow the selected Well type.
-- Manual Field ↔ SI changes convert within the selected basis. A manual
-  liquid ↔ gas change with an entered value asks whether to clear it; Cancel
-  retains the original unit and value. The top Field/SI selector converts all
+- Sand rates (rows 25–27) and PI (rows 28, 32, 138) have liquid and gas
+  units. Well type chooses the basis for rows 25–28 and 32: liquid for Oil
+  Producer, gas for Gas and Gas Condensate Producer. Row 138 follows its own
+  Sand Body's Fluid Type: liquid for Oil, gas for Condensate, Wet Gas, and
+  Dry Gas. It uses Well type while Fluid Type is blank, and liquid when both
+  are blank. Each selector offers only Field or SI within the chosen basis.
+- Changing Well type or Fluid Type clears numbers entered in the old basis,
+  because there is no valid conversion without production ratio data. A
+  popup states how many were cleared. The top Field/SI selector converts all
   fields within their current basis and derives Custom from mixed choices.
-- Completed exports warn if a populated field still has a unit incompatible
-  with Well type. Draft saves do not warn. JSON and CSV save selected units,
-  including blank fields; the inactive Bo/Bg alternative is omitted. The
-  top Field/SI/Custom selector is derived and is never saved.
+- JSON and CSV save selected units, including blank fields; the inactive
+  Bo/Bg alternative is omitted. Import and the API reject a liquid/gas unit
+  that contradicts Well type or Fluid Type, including the Well type fallback
+  for a Sand Body whose Fluid Type is blank. The API validates Sand Bodies at
+  the record level for this reason (see docs/devlog). A record missing Well
+  type is rejected as incomplete, so its unit basis is never judged.
+  The top Field/SI/Custom selector is derived and is never saved.
 - Numeric controls show two decimal places when unfocused, or scientific
   notation for tiny nonzero values. Focusing reveals the full value, which
   is used for validation, conversion, JSON, CSV, and database storage.

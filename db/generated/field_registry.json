@@ -3502,6 +3502,23 @@
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
     "unit": "stb/d/psi or mmscf/d/psi",
+    "unit_basis": {
+      "by_answer": {
+        "Condensate": "gas",
+        "Dry Gas": "gas",
+        "Oil": "liquid",
+        "Wet Gas": "gas"
+      },
+      "fallback": {
+        "by_answer": {
+          "Gas Condensate Producer": "gas",
+          "Gas Producer": "gas",
+          "Oil Producer": "liquid"
+        },
+        "parameter": "Well type"
+      },
+      "parameter": "Fluid Type"
+    },
     "unit_choices": [
       {
         "group": "liquid",
@@ -4635,6 +4652,14 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "stb/d/psi or mmscf/d/psi",
+    "unit_basis": {
+      "by_answer": {
+        "Gas Condensate Producer": "gas",
+        "Gas Producer": "gas",
+        "Oil Producer": "liquid"
+      },
+      "parameter": "Well type"
+    },
     "unit_choices": [
       {
         "group": "liquid",
@@ -5363,6 +5388,14 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "pptb or lb/mmscf",
+    "unit_basis": {
+      "by_answer": {
+        "Gas Condensate Producer": "gas",
+        "Gas Producer": "gas",
+        "Oil Producer": "liquid"
+      },
+      "parameter": "Well type"
+    },
     "unit_choices": [
       {
         "group": "liquid",
@@ -5427,6 +5460,14 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "pptb or lb/mmscf",
+    "unit_basis": {
+      "by_answer": {
+        "Gas Condensate Producer": "gas",
+        "Gas Producer": "gas",
+        "Oil Producer": "liquid"
+      },
+      "parameter": "Well type"
+    },
     "unit_choices": [
       {
         "group": "liquid",
@@ -5491,6 +5532,14 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "pptb or lb/mmscf",
+    "unit_basis": {
+      "by_answer": {
+        "Gas Condensate Producer": "gas",
+        "Gas Producer": "gas",
+        "Oil Producer": "liquid"
+      },
+      "parameter": "Well type"
+    },
     "unit_choices": [
       {
         "group": "liquid",
@@ -5954,6 +6003,14 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "stb/d/psi or mmscf/d/psi",
+    "unit_basis": {
+      "by_answer": {
+        "Gas Condensate Producer": "gas",
+        "Gas Producer": "gas",
+        "Oil Producer": "liquid"
+      },
+      "parameter": "Well type"
+    },
     "unit_choices": [
       {
         "group": "liquid",
