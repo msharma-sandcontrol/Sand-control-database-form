@@ -39,6 +39,7 @@ PAIRS = {
     "mmscf/d": ("Sm³/d", 1e6 * SCF, 0),
     "ppa": ("kg/m³ clean fluid", LB / GALLON, 0),
     "ppg": ("g/cm³", LB / GALLON / 1000, 0),
+    "rb/STB": ("m³ reservoir/m³ stock tank", 1, 0),
     "psi": ("kPa", PSI / 1000, 0),
     "scf/stb": ("Sm³/Sm³", SCF / BARREL, 0),
     "shots/ft": ("shots/m", 1 / FT, 0),
@@ -68,6 +69,12 @@ def choices_for(row: ParamRow) -> list[dict]:
             _choice("MMSCF/d/psi", "Field", "gas", 1e6 * SCF / (PSI / 1000)),
             _choice("Sm³ liquid/d/kPa", "SI", "liquid", 1),
             _choice("Sm³ gas/d/kPa", "SI", "gas", 1),
+        ]
+    if label == "res ft³/scf or rb/scf":
+        return [
+            _choice("res ft³/scf", "Field", "gas_fvf", 1),
+            _choice("rb/scf", "Field", "gas_fvf", BARREL / SCF),
+            _choice("m³ reservoir/Sm³ gas", "SI", "gas_fvf", 1),
         ]
     if label == "gauge or micron":
         return [

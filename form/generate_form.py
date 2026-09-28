@@ -63,6 +63,7 @@ from dictionary import (  # noqa: E402
     group_by_category_subcategory,
     load_dictionary,
 )
+from dictionary.conditional_fields import GAS_FVF, OIL_FVF, expand_conditional_rows  # noqa: E402
 from dictionary.units import choices_for  # noqa: E402
 
 DEFAULT_INPUT = REPO_ROOT / "MASTER.xlsx"
@@ -112,6 +113,7 @@ EXPORT_NAME_PARAMS = (
 # --------------------------------------------------------------------------
 
 def build_model(rows: list[ParamRow]) -> dict:
+    rows = expand_conditional_rows(rows)
     well_rows = [r for r in rows if r.scope == WELL_SCOPE]
     completion_rows = [r for r in rows if r.scope == COMPLETION_SCOPE]
     sand_body_rows = [r for r in rows if r.scope == SAND_BODY_SCOPE]
@@ -362,7 +364,7 @@ main { max-width: 1280px; margin: 1.5rem auto; padding: 0 1rem; }
 .sand-body-instance.interval-even .field-row { background: var(--sb-even-row); }
 
 .field-grid { display: flex; flex-direction: column; }
-.field-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.4fr) 160px 74px minmax(160px, 1fr); gap: .75rem; align-items: center; padding: .4rem 1rem; border-top: 1px solid #eee; }
+.field-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.4fr) 220px 74px minmax(160px, 1fr); gap: .75rem; align-items: center; padding: .4rem 1rem; border-top: 1px solid #eee; }
 .zone-general .field-row { background: var(--general-row); }
 .zone-well .field-row { background: var(--well-row); }
 .field-name { font-size: .88rem; display: flex; align-items: center; gap: .3rem; }
@@ -372,6 +374,7 @@ select.unit-select { width: 100%; padding: .3rem .2rem; }
 .unit-toolbar { display: flex; align-items: center; gap: .65rem; margin-top: .75rem; }
 .unit-toolbar select { width: auto; min-width: 8rem; }
 .unit-toolbar small { opacity: .9; }
+#basis-change-status { margin-top: .4rem; color: #fff4ac; font-weight: 600; }
 .field-action { display: flex; }
 .apply-count-btn { background: var(--header-bg); color: #fff; border: none; border-radius: 4px; padding: .3rem .6rem; cursor: pointer; font-size: .78rem; }
 .apply-count-btn:hover { opacity: .9; }
@@ -434,6 +437,8 @@ JS = """
   const EXPIRES_ON = __EXPIRES_ON__;
   const EXPORT_NAME_PARAMS = __EXPORT_NAME_PARAMS__;
   const CHOICE_DISPLAY = __CHOICE_DISPLAY__;
+  const OIL_FVF = __OIL_FVF__;
+  const GAS_FVF = __GAS_FVF__;
   const wellSection = document.getElementById('well-section');
   const sandForm = document.getElementById('sand-form');
   const unitSystemSelect = document.getElementById('unit-system');
@@ -485,11 +490,45 @@ JS = """
       control.value = choices.includes(current) ? current : '';
     });
   }
+  // Numeric controls show two decimal places when unfocused. Their exact
+  // value is kept separately for conversion, validation, and JSON/CSV saves;
+  // focusing the control reveals the full value for accurate editing. Tiny
+  // nonzero values use exponent notation instead of becoming a false 0.00.
+  function exactNumber(input) { return input.dataset.exactValue ?? input.value; }
+  function displayNumber(raw, input) {
+    if (raw === '') return '';
+    if (input.getAttribute('step') === '1') return raw; // Counts stay integers.
+    const number = Number(raw);
+    if (!Number.isFinite(number)) return raw;
+    if (number !== 0 && Math.abs(number) < 0.005) return number.toExponential(2);
+    return number.toFixed(2);
+  }
+  function setNumericValue(input, value) {
+    const exact = String(value ?? '');
+    input.dataset.exactValue = exact;
+    input.value = document.activeElement === input ? exact : displayNumber(exact, input);
+  }
+  function clearNumericValue(input) { input.dataset.exactValue = ''; input.value = ''; }
+  sandForm.addEventListener('input', (event) => {
+    if (event.target.matches('input[type="number"]')) event.target.dataset.exactValue = event.target.value;
+  });
+  sandForm.addEventListener('focusin', (event) => {
+    if (event.target.matches('input[type="number"]')) {
+      event.target.value = exactNumber(event.target);
+      event.target.select();
+    }
+  });
+  sandForm.addEventListener('focusout', (event) => {
+    if (event.target.matches('input[type="number"]')) {
+      setNumericValue(event.target, exactNumber(event.target));
+    }
+  });
   function clearControl(control) {
     if (control.dataset.kind === 'multi_number') {
-      control.querySelectorAll('input').forEach((i) => { i.value = ''; });
+      control.querySelectorAll('input').forEach(clearNumericValue);
       return;
     }
+    if (control.dataset.kind === 'number') { clearNumericValue(control); return; }
     control.value = '';
   }
   // A hidden field/subcategory must not leave a stale value behind -- otherwise
@@ -498,6 +537,13 @@ JS = """
   // show/hide decision even though the user can no longer see or change it.
   function resetHiddenControls(el) {
     el.querySelectorAll('[data-param]').forEach(clearControl);
+    // Bo/Bg are alternatives for one physical measurement. A comment on
+    // the old alternative must not survive a Fluid Type change under a
+    // misleading parameter name.
+    const rows = el.classList.contains('field-row') ? [el] : Array.from(el.querySelectorAll('.field-row'));
+    rows.forEach((row) => {
+      if ([OIL_FVF, GAS_FVF].includes(fieldParam(row))) row.querySelector('.field-comment').value = '';
+    });
   }
   // Hiding a control with CSS does NOT exempt it from constraint validation --
   // only `disabled` does. Without this, a required field the user can't even see
@@ -576,18 +622,18 @@ JS = """
     if (!before || !after) return false;
     const row = select.closest('.field-row');
     const controls = Array.from(row.querySelectorAll('input[data-kind="number"], .mn-input'));
-    const filled = controls.filter((input) => input.value !== '');
+    const filled = controls.filter((input) => exactNumber(input) !== '');
     if (filled.length && before.group !== after.group) {
       if (!window.confirm('This changes the liquid/gas measurement basis. The existing number cannot be converted without production-ratio data. Clear it and choose the new basis?')) {
         select.value = oldUnit;
         return false;
       }
-      filled.forEach((input) => { input.value = ''; });
+      filled.forEach(clearNumericValue);
     } else if (filled.length) {
       filled.forEach((input) => {
-        const canonical = Number(input.value) * before.scale + before.offset;
+        const canonical = Number(exactNumber(input)) * before.scale + before.offset;
         const converted = (canonical - after.offset) / after.scale;
-        input.value = Number(converted.toPrecision(15)).toString();
+        setNumericValue(input, Number(converted.toPrecision(15)).toString());
       });
     }
     select.value = nextUnit;
@@ -606,6 +652,48 @@ JS = """
     }
     return (choices.find((choice) => choice.group === group &&
       (choice.system === system || choice.system === 'both')) || choices[0]).unit;
+  }
+  function wellTypeBasis() {
+    const wellType = findParamField(wellSection, 'Well type').value;
+    return wellType === 'Oil Producer' ? 'liquid' :
+      (wellType === 'Gas Producer' || wellType === 'Gas Condensate Producer' ? 'gas' : null);
+  }
+  function syncWellTypeUnits(root) {
+    const basis = wellTypeBasis();
+    if (!basis) return 0;
+    let cleared = 0;
+    root.querySelectorAll('select.unit-select').forEach((select) => {
+      const choices = unitChoices(select);
+      if (!choices.some((choice) => choice.group === 'liquid') ||
+          !choices.some((choice) => choice.group === 'gas')) return;
+      const current = unitChoice(select, select.dataset.currentUnit);
+      if (current.group === basis) return;
+      const target = choices.find((choice) => choice.group === basis && choice.system === current.system);
+      if (!target) return;
+      // A well-type change is authoritative: old-basis numbers cannot be
+      // converted and must be re-entered. No manual-unit confirmation here.
+      select.closest('.field-row').querySelectorAll('input[type="number"]').forEach((input) => {
+        if (exactNumber(input) !== '') { cleared += 1; clearNumericValue(input); }
+      });
+      setFieldUnit(select, target.unit);
+    });
+    updateTopUnitIndicator();
+    return cleared;
+  }
+  function incompatibleUnits() {
+    const basis = wellTypeBasis();
+    if (!basis) return [];
+    return Array.from(sandForm.querySelectorAll('select.unit-select')).flatMap((select) => {
+      const choice = unitChoice(select, select.dataset.currentUnit);
+      if (!['liquid', 'gas'].includes(choice.group) || choice.group === basis) return [];
+      const row = select.closest('.field-row');
+      if (isRuleHidden(row) || !Array.from(row.querySelectorAll('input[type="number"]'))
+        .some((input) => exactNumber(input) !== '')) return [];
+      const comp = row.closest('.completion-instance');
+      const body = row.closest('.sand-body-instance');
+      const location = body ? `Completion Interval ${comp.dataset.intervalIndex}, Sand Body ${body.dataset.intervalIndex}: ` : '';
+      return [location + fieldParam(row) + ' (' + choice.unit + ')'];
+    });
   }
   function applyBulkUnits(root, system) {
     root.querySelectorAll('select.unit-select').forEach((select) => {
@@ -677,6 +765,7 @@ JS = """
       renumber();
       evaluateVisibility(section);
       if (onAdd) onAdd(section);
+      syncWellTypeUnits(section);
       updateTopUnitIndicator();
       return section;
     }
@@ -730,7 +819,14 @@ JS = """
     onAdd: wireSandBodyRepeater,
   });
 
-  wellSection.addEventListener('change', () => evaluateVisibility(wellSection));
+  wellSection.addEventListener('change', (event) => {
+    if (event.target.dataset.param === 'Well type') {
+      const cleared = syncWellTypeUnits(sandForm);
+      document.getElementById('basis-change-status').textContent = cleared ?
+        `Changing Well type cleared ${cleared} liquid/gas measurement(s). Re-enter them in the selected basis.` : '';
+    }
+    evaluateVisibility(wellSection);
+  });
   evaluateVisibility(wellSection);
   completionRepeater.add();
   wireApplyButton(wellSection, completionRepeater, MAX_COMPLETION);
@@ -740,10 +836,11 @@ JS = """
     const control = fieldRow.querySelector('[data-kind]');
     if (!control) return null;
     if (control.dataset.kind === 'multi_number') {
-      const vals = Array.from(control.querySelectorAll('input')).map((i) => i.value);
+      const vals = Array.from(control.querySelectorAll('input')).map(exactNumber);
       return vals.every((v) => v === '') ? null : vals;
     }
-    return control.value === '' ? null : control.value;
+    const value = control.dataset.kind === 'number' ? exactNumber(control) : control.value;
+    return value === '' ? null : value;
   }
 
   function fieldParam(fieldRow) {
@@ -789,6 +886,9 @@ JS = """
     // An explicit unit is part of the state even if a field is blank or
     // temporarily hidden. Hidden answers are still omitted.
     walkFields(root, false, (sub, fr) => {
+      // Bo and Bg are two exclusive representations of the same workbook
+      // slot. Do not serialize the hidden alternative's empty unit choice.
+      if (isRuleHidden(fr) && [OIL_FVF, GAS_FVF].includes(fieldParam(fr))) return;
       const unit = fieldUnit(fr);
       const value = isRuleHidden(fr) ? null : readFieldValue(fr);
       if (unit !== null || value !== null) {
@@ -804,6 +904,7 @@ JS = """
     // A comment remains in the form if its conditional field is hidden, so
     // save it even though hidden field values are cleared by visibility rules.
     walkFields(root, false, (sub, fr) => {
+      if (isRuleHidden(fr) && [OIL_FVF, GAS_FVF].includes(fieldParam(fr))) return;
       const comment = fr.querySelector('.field-comment').value;
       if (comment !== '') putBucketValue(bucket, sub.dataset.category, sub.dataset.subcategory, fieldParam(fr), comment);
     });
@@ -1045,6 +1146,18 @@ JS = """
         }
       }
     }
+    if (!commentsOnly) {
+      const fvf = bucket?.['Reservoir Characterization']?.['Reservoir Rock and Fluid Properties'];
+      if (fvf) {
+        const gas = ['Condensate', 'Wet Gas', 'Dry Gas'].includes(fvf['Fluid Type']);
+        const inactive = gas ? OIL_FVF : GAS_FVF;
+        const old = fvf[inactive];
+        const bare = isObject(old) ? old.value : old;
+        if (bare !== undefined && bare !== null && bare !== '') {
+          throw new Error('The saved ' + inactive + ' conflicts with Fluid Type.');
+        }
+      }
+    }
   }
 
   function validateImport(record) {
@@ -1123,7 +1236,9 @@ JS = """
             if (bare === null) continue;
             const control = row.querySelector('[data-kind]');
             if (control.dataset.kind === 'multi_number') {
-              control.querySelectorAll('input').forEach((input, i) => { input.value = bare[i]; });
+              control.querySelectorAll('input').forEach((input, i) => { setNumericValue(input, bare[i]); });
+            } else if (control.dataset.kind === 'number') {
+              setNumericValue(control, bare);
             } else {
               control.value = bare;
             }
@@ -1156,6 +1271,7 @@ JS = """
         evaluateVisibility(sb);
       });
     });
+    document.getElementById('basis-change-status').textContent = '';
     updateTopUnitIndicator();
     // A mixed imported record has no saved bulk choice. New repeaters start
     // in Field units deterministically, while existing per-field units stay put.
@@ -1210,8 +1326,27 @@ JS = """
     URL.revokeObjectURL(url);
   }
 
+  function reportExactValidity() {
+    // Native validation must see the exact saved number. A rounded display
+    // can otherwise hide an out-of-range value or reject a valid value near
+    // a converted fractional bound (for example 0°F in Celsius).
+    const inputs = Array.from(sandForm.querySelectorAll('input[type="number"]'));
+    inputs.forEach((input) => { input.value = exactNumber(input); });
+    const valid = sandForm.reportValidity();
+    inputs.forEach((input) => { setNumericValue(input, exactNumber(input)); });
+    return valid;
+  }
   function saveFile(format, draft) {
-    if (!draft && !sandForm.reportValidity()) return;
+    if (!draft) {
+      if (!reportExactValidity()) return;
+      const conflicts = incompatibleUnits();
+      if (conflicts.length) {
+        const listed = conflicts.slice(0, 10).join('\\n');
+        const more = conflicts.length > 10 ? `\n...and ${conflicts.length - 10} more.` : '';
+        if (!window.confirm('These entered values use a liquid/gas unit that conflicts with Well type:\\n' +
+            listed + more + '\\n\\nContinue exporting anyway?')) return;
+      }
+    }
     const record = collectData();
     // The filename helps people distinguish files in a folder; this marker
     // survives a rename and lets the JSON/CSV importers identify the status.
@@ -1270,7 +1405,9 @@ def render_html(model: dict, max_completion: int = DEFAULT_MAX_COMPLETION,
             .replace("__MAX_SAND_BODY__", str(max_sand_bodies))
             .replace("__EXPIRES_ON__", json.dumps(expires_on) if expires_on else "null")
             .replace("__EXPORT_NAME_PARAMS__", json.dumps(list(EXPORT_NAME_PARAMS)))
-            .replace("__CHOICE_DISPLAY__", json.dumps(CHOICE_DISPLAY, ensure_ascii=False)))
+            .replace("__CHOICE_DISPLAY__", json.dumps(CHOICE_DISPLAY, ensure_ascii=False))
+            .replace("__OIL_FVF__", json.dumps(OIL_FVF))
+            .replace("__GAS_FVF__", json.dumps(GAS_FVF)))
 
     if expires_on:
         cutoff = date.fromisoformat(expires_on)
@@ -1293,8 +1430,9 @@ def render_html(model: dict, max_completion: int = DEFAULT_MAX_COMPLETION,
   <p>Import a saved file, save an unfinished draft, or export a completed record. JSON and CSV are available for both saves. Hover the <strong>?</strong> icon next to a field for guidance.</p>
   <div class="unit-toolbar"><label for="unit-system">Units</label>
     <select id="unit-system" aria-label="Units for the form"><option value="Field" selected>Field</option><option value="SI">SI</option><option value="Custom" disabled>Custom</option></select>
-    <small>Changing units converts entered values. Standard gas volumes use 60°F and 14.73 psia on both sides.</small>
+    <small>Unit changes convert values within one liquid/gas basis. Changing Well type clears incompatible numbers. Standard gas volumes use 60°F and 14.73 psia on both sides.</small>
   </div>
+  <p id="basis-change-status" role="status" aria-live="polite"></p>
   {validity_notice}
   <p id="expired-banner" class="expired-banner" style="display:none;">
     This form has expired and is no longer accepting submissions. Please contact your Sand Control Failure DB
@@ -1369,7 +1507,7 @@ def main() -> None:
     well_subcats = sum(len(v) for v in model["well"].values())
     completion_subcats = sum(len(v) for v in model["completion"].values())
     sand_body_subcats = sum(len(v) for v in model["sand_body"].values())
-    print(f"Wrote {output_path} ({len(rows)} parameters: "
+    print(f"Wrote {output_path} ({len(expand_conditional_rows(rows))} effective parameters: "
           f"{well_subcats} well-scope, {completion_subcats} completion-interval-scope, "
           f"{sand_body_subcats} sand-body-scope subcategories).")
 

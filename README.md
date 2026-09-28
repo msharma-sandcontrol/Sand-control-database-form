@@ -40,6 +40,19 @@ docker-compose.yml      local Postgres + backend, from zero on any machine
 
 See [CLAUDE.md](CLAUDE.md) for the full data model and architecture.
 
+## Units and formation volume factors
+
+The form starts in Field units. Each convertible measurement has its own unit
+selector, and the top Field/SI selector converts values across the form. A
+manual liquid/gas basis change asks before clearing a value; changing Well
+type sets the matching basis and clears numbers that cannot be converted.
+Completed exports warn about any remaining populated mismatches; draft saves
+do not. Numeric controls show two decimal places when unfocused, while saved
+JSON/CSV retain the full entered value. Sand-body Fluid Type selects Oil Bo or
+Gas Bg (for Condensate, Wet Gas, and Dry Gas) at row 145, with explicit ratio
+units. See [the conversion table](docs/unit_conversion_review.md) for factors
+and reference conditions.
+
 ## Explore the form logic
 
 Open [the interactive logic tree](docs/form_logic_tree.html) in a browser to

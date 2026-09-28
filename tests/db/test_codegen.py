@@ -41,11 +41,12 @@ def test_generated_output_matches_committed_files(tmp_path, monkeypatch):
         assert fresh == committed, f"{name} is stale -- run `python -m db.codegen` and commit the result"
 
 
-def test_field_registry_has_one_entry_per_dictionary_row():
+def test_field_registry_has_one_entry_per_effective_dictionary_row():
     from dictionary import load_dictionary
+    from dictionary.conditional_fields import expand_conditional_rows
 
     registry = json.loads((GENERATED_DIR / "field_registry.json").read_text(encoding="utf-8"))
-    rows = load_dictionary(codegen.MASTER_XLSX)
+    rows = expand_conditional_rows(load_dictionary(codegen.MASTER_XLSX))
     assert len(registry) == len(rows)
 
 

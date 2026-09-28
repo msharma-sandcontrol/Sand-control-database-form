@@ -63,3 +63,46 @@ def test_gas_basis_keeps_zero_minimum(make_payload):
     }
     with pytest.raises(MappingError, match="below the minimum"):
         flatten_bucket(well, "well")
+
+
+def test_conditional_oil_and_gas_fvf_use_distinct_saved_fields(make_payload):
+    from dictionary.conditional_fields import GAS_FVF, OIL_FVF
+
+    sand = make_payload()["completion_intervals"][0]["sand_bodies"][0]
+    group = sand.setdefault("Reservoir Characterization", {}).setdefault(
+        "Reservoir Rock and Fluid Properties", {}
+    )
+    group["Fluid Type"] = "Oil"
+    group[OIL_FVF] = {"value": "1.234567", "unit": "rb/STB"}
+    oil = flatten_bucket(sand, "sand_body")
+    assert float(oil["oil_formation_volume_factor_bo_at_downhole_conditions"]) == 1.234567
+    assert oil["oil_formation_volume_factor_bo_at_downhole_conditions_unit"] == "rb/STB"
+    assert "gas_formation_volume_factor_bg_at_downhole_conditions" not in oil
+
+    del group[OIL_FVF]
+    group["Fluid Type"] = "Condensate"
+    group[GAS_FVF] = {"value": "0.003456", "unit": "res ft³/scf"}
+    gas = flatten_bucket(sand, "sand_body")
+    assert float(gas["gas_formation_volume_factor_bg_at_downhole_conditions"]) == 0.003456
+    assert gas["gas_formation_volume_factor_bg_at_downhole_conditions_unit"] == "res ft³/scf"
+    assert "oil_formation_volume_factor_bo_at_downhole_conditions" not in gas
+    rebuilt = build_record_out(gas, "sand_body")
+    assert rebuilt["Reservoir Characterization"]["Reservoir Rock and Fluid Properties"][GAS_FVF] == {
+        "value": 0.003456, "unit": "res ft³/scf",
+    }
+    group[OIL_FVF] = {"value": "1.23", "unit": "rb/STB"}
+    with pytest.raises(MappingError, match="hidden"):
+        flatten_bucket(sand, "sand_body")
+
+
+def test_bg_reservoir_barrel_unit_is_valid(make_payload):
+    from dictionary.conditional_fields import GAS_FVF
+
+    sand = make_payload()["completion_intervals"][0]["sand_bodies"][0]
+    group = sand.setdefault("Reservoir Characterization", {}).setdefault(
+        "Reservoir Rock and Fluid Properties", {}
+    )
+    group["Fluid Type"] = "Dry Gas"
+    group[GAS_FVF] = {"value": "0.001", "unit": "rb/scf"}
+    flat = flatten_bucket(sand, "sand_body")
+    assert flat["gas_formation_volume_factor_bg_at_downhole_conditions_unit"] == "rb/scf"

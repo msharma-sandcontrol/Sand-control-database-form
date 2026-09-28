@@ -3416,6 +3416,71 @@
     ],
     "unit_column": "frac_gradient_unit"
   },
+  "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Gas Formation Volume Factor (Bg) at downhole conditions": {
+    "category": "Reservoir Characterization",
+    "db_columns": [
+      "gas_formation_volume_factor_bg_at_downhole_conditions"
+    ],
+    "db_type": "Numeric",
+    "kind": "number",
+    "max_length": null,
+    "max_value": null,
+    "min_length": null,
+    "min_value": 0,
+    "options": [],
+    "parameter": "Gas Formation Volume Factor (Bg) at downhole conditions",
+    "pattern": null,
+    "required": false,
+    "row_number": 145,
+    "scope": "sand_body",
+    "step": null,
+    "subcategory": "Reservoir Rock and Fluid Properties",
+    "table": "sand_body",
+    "unit": "res ft\u00b3/scf or rb/scf",
+    "unit_choices": [
+      {
+        "group": "gas_fvf",
+        "offset": 0,
+        "scale": 1,
+        "system": "Field",
+        "unit": "res ft\u00b3/scf"
+      },
+      {
+        "group": "gas_fvf",
+        "offset": 0,
+        "scale": 5.614583333333333,
+        "system": "Field",
+        "unit": "rb/scf"
+      },
+      {
+        "group": "gas_fvf",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "m\u00b3 reservoir/Sm\u00b3 gas"
+      }
+    ],
+    "unit_column": "gas_formation_volume_factor_bg_at_downhole_conditions_unit",
+    "visibility": {
+      "hide": [],
+      "show": [
+        {
+          "parameter": "Fluid Type",
+          "value": "Condensate"
+        },
+        {
+          "parameter": "Fluid Type",
+          "value": "Wet Gas"
+        },
+        {
+          "parameter": "Fluid Type",
+          "value": "Dry Gas"
+        }
+      ],
+      "subcategory_hide": [],
+      "subcategory_show": []
+    }
+  },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Initial PI": {
     "category": "Reservoir Characterization",
     "db_columns": [
@@ -3552,9 +3617,43 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "",
-    "unit_choices": [],
-    "unit_column": null
+    "unit": "rb/STB",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "Field",
+        "unit": "rb/STB"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "m\u00b3 reservoir/m\u00b3 stock tank"
+      }
+    ],
+    "unit_column": "oil_formation_volume_factor_bo_at_downhole_conditions_unit",
+    "visibility": {
+      "hide": [
+        {
+          "parameter": "Fluid Type",
+          "value": "Condensate"
+        },
+        {
+          "parameter": "Fluid Type",
+          "value": "Wet Gas"
+        },
+        {
+          "parameter": "Fluid Type",
+          "value": "Dry Gas"
+        }
+      ],
+      "show": [],
+      "subcategory_hide": [],
+      "subcategory_show": []
+    }
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::PSD D10/D25/D40/D50/D75/D90": {
     "category": "Reservoir Characterization",

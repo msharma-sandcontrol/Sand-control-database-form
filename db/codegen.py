@@ -31,6 +31,7 @@ from dictionary import (  # noqa: E402
     load_dictionary,
     target_rules,
 )
+from dictionary.conditional_fields import expand_conditional_rows  # noqa: E402
 from dictionary.models import FieldSpec  # noqa: E402
 from dictionary.units import choices_for  # noqa: E402
 
@@ -55,7 +56,7 @@ def _column_type_name(row: ParamRow, spec: FieldSpec) -> str:
 
 def generate() -> dict[str, list[tuple[str, str, str]]]:
     """Writes db/generated/* and returns {scope_key: [(col_name, type_name, source_parameter), ...]}."""
-    rows = load_dictionary(MASTER_XLSX)
+    rows = expand_conditional_rows(load_dictionary(MASTER_XLSX))
     visibility = build_visibility_rules(rows)
     registry: dict[str, dict] = {}
     per_table_columns: dict[str, list[tuple[str, str, str]]] = {}
