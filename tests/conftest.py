@@ -92,8 +92,8 @@ def make_payload():
     """Build a browser-valid API record for a chosen visibility branch.
 
     The registry decides which required fields apply after the controlling
-    answers are set. This covers Onshore, No failure, and type-specific sand
-    severity without copying those rules into the fixture.
+    answers are set. This covers Onshore, No failure, and severity under Yes
+    without copying those rules into the fixture.
     """
     from db.mapping import _BY_SCOPE, _applicable
     from dictionary import CURRENT_SCHEMA_VERSION

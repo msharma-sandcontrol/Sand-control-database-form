@@ -8,7 +8,7 @@ def _auth(token: str) -> dict:
 
 def test_fetch_round_trips_submitted_data(client, seeded_org, make_payload):
     _, token = seeded_org
-    payload = make_payload()
+    payload = make_payload(sand_failure="Yes")
     payload["well"]["Well Specific"]["Well & Field Identification"]["Well name (anonymized)"] = "FETCHTEST"
     payload["record_status"] = "complete"
     payload["comments"] = {

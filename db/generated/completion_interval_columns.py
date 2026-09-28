@@ -49,7 +49,7 @@ COMPLETION_INTERVAL_COLUMNS = [
     Column("if_screens_ran_in_mud_was_mud_removed_once_screens_on_bottom", Boolean, nullable=True, comment="If screens ran in mud, was mud removed once screens on bottom?"),
     Column("did_screens_get_to_target_setting_depth", Boolean, nullable=True, comment="Did screens get to Target Setting Depth"),
     Column("blank_pipe_run_across_non_pay_sections_instead_of_screens", Boolean, nullable=True, comment="Blank pipe run across non-pay sections instead of screens?"),
-    Column("screen_size_selection", Text, nullable=True, comment="Screen Size Selection"),
+    Column("screen_size_selection_method", Text, nullable=True, comment="Screen Size Selection Method"),
     Column("placement_method", Text, nullable=True, comment="Placement Method"),
     Column("pack_through_shunts", Numeric, nullable=True, comment="% Pack through Shunts"),
     Column("shunt_tubes", Boolean, nullable=True, comment="Shunt Tubes"),

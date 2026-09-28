@@ -1872,10 +1872,10 @@
       "subcategory_show": []
     }
   },
-  "completion_interval::Completion::Liners and Screens::Screen Size Selection": {
+  "completion_interval::Completion::Liners and Screens::Screen Size Selection Method": {
     "category": "Completion",
     "db_columns": [
-      "screen_size_selection"
+      "screen_size_selection_method"
     ],
     "db_type": "Text",
     "kind": "select",
@@ -1888,7 +1888,7 @@
       "Rule of thumb",
       "Company standard"
     ],
-    "parameter": "Screen Size Selection",
+    "parameter": "Screen Size Selection Method",
     "pattern": null,
     "required": false,
     "row_number": 100,
@@ -4375,16 +4375,8 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Well type",
-          "value": "Oil Producer"
-        },
-        {
-          "parameter": "Well type",
-          "value": "Gas Producer"
-        },
-        {
-          "parameter": "Well type",
-          "value": "Gas Condensate Producer"
+          "parameter": "Sand failure",
+          "value": "Yes"
         }
       ],
       "subcategory_hide": [],

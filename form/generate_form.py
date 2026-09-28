@@ -526,8 +526,13 @@ JS = """
         section.dataset.intervalIndex = i;
         const completionIdxEl = section.querySelector(':scope > .interval-banner .completion-index');
         if (completionIdxEl) completionIdxEl.textContent = section.closest('.completion-instance').dataset.intervalIndex;
-        section.querySelectorAll('.sand-body-instance > .interval-banner .completion-index')
-          .forEach((el) => { el.textContent = i; });
+        // Only a Completion Interval renumbers its nested Sand Body parent labels.
+        // Running this from a Sand Body repeater would overwrite the parent index
+        // with that body's own index (e.g. Interval 1 / Body 2 became 2 / 2).
+        if (section.classList.contains('completion-instance')) {
+          section.querySelectorAll('.sand-body-instance > .interval-banner .completion-index')
+            .forEach((el) => { el.textContent = i; });
+        }
       });
       count = i;
       addBtn.disabled = count >= maxCount;

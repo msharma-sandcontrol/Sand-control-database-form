@@ -19,18 +19,25 @@ def _well(payload: dict, section: str) -> dict:
     return payload["well"]["Well Specific"][section]
 
 
-@pytest.mark.parametrize("failure", ["No", "Yes"])
-def test_severity_is_required_for_either_failure_answer(make_payload, failure):
-    payload = make_payload(sand_failure=failure)
-    assert RecordIngest.model_validate(payload).well == payload["well"]
-    del _well(payload, PERFORMANCE)["Severity of sand production"]
+def test_severity_is_required_only_after_confirmed_failure(make_payload):
+    no_payload = make_payload(sand_failure="No")
+    performance = _well(no_payload, PERFORMANCE)
+    assert "Severity of sand production" not in performance
+    assert RecordIngest.model_validate(no_payload)
+    performance["Severity of sand production"] = "Minor (<0.2 lb/1000 bbl)"
+    with pytest.raises(ValidationError, match="hidden by the current form answers"):
+        RecordIngest.model_validate(no_payload)
+
+    yes_payload = make_payload(sand_failure="Yes")
+    assert RecordIngest.model_validate(yes_payload)
+    del _well(yes_payload, PERFORMANCE)["Severity of sand production"]
     with pytest.raises(ValidationError, match="Severity of sand production.*required"):
-        RecordIngest.model_validate(payload)
+        RecordIngest.model_validate(yes_payload)
 
 
 @pytest.mark.parametrize("well_type", ["Oil Producer", "Gas Producer", "Gas Condensate Producer"])
 def test_severity_uses_selected_well_type_choices(make_payload, well_type):
-    payload = make_payload(well_type=well_type)
+    payload = make_payload(sand_failure="Yes", well_type=well_type)
     severity = _well(payload, PERFORMANCE)
     assert RecordIngest.model_validate(payload)
     wrong = "Minor (<0.01 lb/MMSCF)" if well_type == "Oil Producer" else "Minor (<0.2 lb/1000 bbl)"
@@ -56,6 +63,17 @@ def test_hidden_yes_only_answer_is_rejected_for_no_failure(make_payload):
     payload = make_payload(sand_failure="No")
     _well(payload, PERFORMANCE)["Sand failure mechanism"] = "Screen Plugging"
     with pytest.raises(ValidationError, match="hidden by the current form answers"):
+        RecordIngest.model_validate(payload)
+
+def test_screen_size_selection_method_uses_new_field_name(make_payload):
+    payload = make_payload()
+    screens = payload["completion_intervals"][0]["fields"].setdefault("Completion", {}).setdefault(
+        "Liners and Screens", {}
+    )
+    screens["Screen Size Selection Method"] = "Rule of thumb"
+    assert RecordIngest.model_validate(payload)
+    screens["Screen Size Selection"] = screens.pop("Screen Size Selection Method")
+    with pytest.raises(ValidationError, match="not a recognized field"):
         RecordIngest.model_validate(payload)
 
 
