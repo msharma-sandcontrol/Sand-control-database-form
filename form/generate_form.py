@@ -63,6 +63,7 @@ from dictionary import (  # noqa: E402
     group_by_category_subcategory,
     load_dictionary,
 )
+from dictionary.units import choices_for  # noqa: E402
 
 DEFAULT_INPUT = REPO_ROOT / "MASTER.xlsx"
 DEFAULT_OUTPUT = Path(__file__).resolve().parent / "sand_control_form.html"
@@ -123,6 +124,11 @@ def build_model(rows: list[ParamRow]) -> dict:
     }
 
 
+# The option VALUE stays exactly as defined by MASTER.xlsx and the API. Only
+# the visible wording adds practical metric equivalents for fixed thresholds.
+CHOICE_DISPLAY = {'Shelf Offshore (< 3,000 ft)': 'Shelf Offshore (< 3,000 ft / 914.4 m)', 'Deepwater Offshore (3,000 - 6,000 ft)': 'Deepwater Offshore (3,000–6,000 ft / 914.4–1,828.8 m)', 'Ultra-Deepwater Offshore (> 6,000 ft)': 'Ultra-Deepwater Offshore (> 6,000 ft / 1,828.8 m)', 'Minor (<0.2 lb/1000 bbl)': 'Minor (<0.2 lb/1000 bbl / 0.571 mg/L liquid)', 'Moderate (0.2 to 2 lb/1000 bbl)': 'Moderate (0.2–2 lb/1000 bbl / 0.571–5.706 mg/L liquid)', 'Severe (2 to 10 lb/1000 bbl)': 'Severe (2–10 lb/1000 bbl / 5.706–28.530 mg/L liquid)', 'Catastrophic (>10 lb/1000 bbl)': 'Catastrophic (>10 lb/1000 bbl / 28.530 mg/L liquid)', 'Minor (<0.01 lb/MMSCF)': 'Minor (<0.01 lb/MMSCF / 0.160 mg/Sm³ gas)', 'Moderate (0.01 to 0.05 lb/MMSCF)': 'Moderate (0.01–0.05 lb/MMSCF / 0.160–0.801 mg/Sm³ gas)', 'Severe (0.05 to 0.2 lb/MMSCF)': 'Severe (0.05–0.2 lb/MMSCF / 0.801–3.204 mg/Sm³ gas)', 'Catastrophic (>0.2 lb/MMscf)': 'Catastrophic (>0.2 lb/MMSCF / 3.204 mg/Sm³ gas)', 'Gradual (≤ 0.01 in/hr average increase in choke diameter)': 'Gradual (≤ 0.01 in/hr / 0.0254 cm/hr average choke increase)', 'Aggressive (> 0.01 in/hr, or a single increase ≥ 0.05 in within 1 hr)': 'Aggressive (> 0.01 in/hr / 0.0254 cm/hr, or ≥ 0.05 in / 0.127 cm within 1 hr)'}
+
+
 # --------------------------------------------------------------------------
 # HTML rendering
 # --------------------------------------------------------------------------
@@ -170,7 +176,7 @@ def render_control(row: ParamRow, spec: FieldSpec) -> str:
             conditional = f' data-options-by="{esc(json.dumps(spec.options_by))}"'
         else:
             conditional = ""
-            options += [f'<option value="{esc(o)}">{esc(o)}</option>' for o in spec.options]
+            options += [f'<option value="{esc(o)}">{esc(CHOICE_DISPLAY.get(o, o))}</option>' for o in spec.options]
         return f'<select data-param="{dp}" data-kind="select"{conditional}{req_attr}>{"".join(options)}</select>'
     if spec.kind == "number":
         attrs = ""
@@ -209,11 +215,27 @@ def render_control(row: ParamRow, spec: FieldSpec) -> str:
     return f'<textarea rows="2"{req_attr} data-param="{dp}" data-kind="text" placeholder="Enter text"></textarea>'
 
 
+def render_unit(row: ParamRow) -> str:
+    choices = choices_for(row)
+    if not choices:
+        return '<span class="field-unit"></span>'
+    if len(choices) == 1:
+        unit = esc(choices[0]["unit"])
+        return f'<span class="field-unit" data-unit="{unit}">{unit}</span>'
+    options = "".join(
+        f'<option value="{esc(choice["unit"])}">{esc(choice["unit"])}</option>'
+        for choice in choices
+    )
+    data = esc(json.dumps(choices, ensure_ascii=False))
+    return (f'<select class="field-unit unit-select" aria-label="Unit for {esc(row.parameter)}" '
+            f'data-unit-choices="{data}" data-current-unit="{esc(choices[0]["unit"])}" '
+            f'data-last-field-unit="{esc(choices[0]["unit"])}">{options}</select>')
+
+
 def render_field_row(row: ParamRow, param_show: dict, param_hide: dict) -> str:
     spec = classify_field(row)
     control = render_control(row, spec)
-    show_unit = row.unit and spec.kind != "multi_number"
-    unit_html = f'<span class="field-unit">{esc(row.unit)}</span>' if show_unit else '<span class="field-unit"></span>'
+    unit_html = render_unit(row)
     attrs = build_show_hide_attr(row.category, row.parameter, param_show, param_hide)
     req_mark = '<span class="required-mark">*</span>' if spec.required else ""
     tip_html = f'<span class="tt" tabindex="0" data-tip="{esc(row.tooltip)}">?</span>' if row.tooltip else ""
@@ -340,12 +362,16 @@ main { max-width: 1280px; margin: 1.5rem auto; padding: 0 1rem; }
 .sand-body-instance.interval-even .field-row { background: var(--sb-even-row); }
 
 .field-grid { display: flex; flex-direction: column; }
-.field-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.4fr) 90px 74px minmax(160px, 1fr); gap: .75rem; align-items: center; padding: .4rem 1rem; border-top: 1px solid #eee; }
+.field-row { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.4fr) 160px 74px minmax(160px, 1fr); gap: .75rem; align-items: center; padding: .4rem 1rem; border-top: 1px solid #eee; }
 .zone-general .field-row { background: var(--general-row); }
 .zone-well .field-row { background: var(--well-row); }
 .field-name { font-size: .88rem; display: flex; align-items: center; gap: .3rem; }
 .field-rownum { font-family: "Consolas", monospace; font-size: .72rem; color: #888; flex: 0 0 auto; }
 .field-unit { font-size: .8rem; color: #555; }
+select.unit-select { width: 100%; padding: .3rem .2rem; }
+.unit-toolbar { display: flex; align-items: center; gap: .65rem; margin-top: .75rem; }
+.unit-toolbar select { width: auto; min-width: 8rem; }
+.unit-toolbar small { opacity: .9; }
 .field-action { display: flex; }
 .apply-count-btn { background: var(--header-bg); color: #fff; border: none; border-radius: 4px; padding: .3rem .6rem; cursor: pointer; font-size: .78rem; }
 .apply-count-btn:hover { opacity: .9; }
@@ -407,8 +433,11 @@ JS = """
   const MAX_SAND_BODY = __MAX_SAND_BODY__;
   const EXPIRES_ON = __EXPIRES_ON__;
   const EXPORT_NAME_PARAMS = __EXPORT_NAME_PARAMS__;
+  const CHOICE_DISPLAY = __CHOICE_DISPLAY__;
   const wellSection = document.getElementById('well-section');
   const sandForm = document.getElementById('sand-form');
+  const unitSystemSelect = document.getElementById('unit-system');
+  let lastBulkSystem = 'Field';
 
   // Cutoff is inclusive of the whole EXPIRES_ON day in the viewer's local time --
   // the form stays usable through that date and locks starting the next day.
@@ -417,6 +446,7 @@ JS = """
     document.querySelectorAll('#sand-form input, #sand-form select, #sand-form textarea, #sand-form button')
       .forEach((el) => { el.disabled = true; });
     document.getElementById('import-btn').disabled = true;
+    unitSystemSelect.disabled = true;
     document.querySelectorAll('.file-action-menu').forEach((menu) => {
       menu.open = false;
       menu.inert = true;
@@ -451,7 +481,7 @@ JS = """
       const existing = Array.from(control.options).slice(1).map((option) => option.value);
       if (JSON.stringify(existing) === JSON.stringify(choices)) return;
       const blank = new Option(control.required ? 'Select...' : '(Blank)', '');
-      control.replaceChildren(blank, ...choices.map((choice) => new Option(choice, choice)));
+      control.replaceChildren(blank, ...choices.map((choice) => new Option(CHOICE_DISPLAY[choice] || choice, choice)));
       control.value = choices.includes(current) ? current : '';
     });
   }
@@ -512,6 +542,94 @@ JS = """
     syncValidationExemptions(root);
   }
 
+  // A populated field may change units only within the same production basis.
+  // Liquid-to-gas is a new measurement, not a geometric relabeling.
+  function unitChoices(select) { return JSON.parse(select.dataset.unitChoices); }
+  function unitChoice(select, unit) { return unitChoices(select).find((choice) => choice.unit === unit); }
+  function fieldUnit(row) {
+    const el = row.querySelector('.field-unit');
+    return el?.tagName === 'SELECT' ? el.value : (el?.dataset.unit || null);
+  }
+  function updateUnitLimits(row, choice, choices) {
+    const input = row.querySelector('input[data-kind="number"]');
+    if (!input) return;
+    if (input.dataset.fieldMin === undefined) input.dataset.fieldMin = input.getAttribute('min') ?? '';
+    if (input.dataset.fieldMax === undefined) input.dataset.fieldMax = input.getAttribute('max') ?? '';
+    const source = choices[0];
+    for (const [attr, raw] of [['min', input.dataset.fieldMin], ['max', input.dataset.fieldMax]]) {
+      if (raw === '') { input.removeAttribute(attr); continue; }
+      if (source.group !== choice.group) {
+        // A zero minimum is basis-independent: negative rates/PI are invalid
+        // whether the user chose liquid or gas. Other bounds cannot transfer.
+        if (Number(raw) === 0) input.setAttribute(attr, '0');
+        else input.removeAttribute(attr);
+        continue;
+      }
+      const canonical = Number(raw) * source.scale + source.offset;
+      input.setAttribute(attr, String((canonical - choice.offset) / choice.scale));
+    }
+  }
+  function setFieldUnit(select, nextUnit) {
+    const oldUnit = select.dataset.currentUnit;
+    if (oldUnit === nextUnit) return true;
+    const before = unitChoice(select, oldUnit), after = unitChoice(select, nextUnit);
+    if (!before || !after) return false;
+    const row = select.closest('.field-row');
+    const controls = Array.from(row.querySelectorAll('input[data-kind="number"], .mn-input'));
+    const filled = controls.filter((input) => input.value !== '');
+    if (filled.length && before.group !== after.group) {
+      if (!window.confirm('This changes the liquid/gas measurement basis. The existing number cannot be converted without production-ratio data. Clear it and choose the new basis?')) {
+        select.value = oldUnit;
+        return false;
+      }
+      filled.forEach((input) => { input.value = ''; });
+    } else if (filled.length) {
+      filled.forEach((input) => {
+        const canonical = Number(input.value) * before.scale + before.offset;
+        const converted = (canonical - after.offset) / after.scale;
+        input.value = Number(converted.toPrecision(15)).toString();
+      });
+    }
+    select.value = nextUnit;
+    select.dataset.currentUnit = nextUnit;
+    if (after.system === 'Field' || after.system === 'both') select.dataset.lastFieldUnit = nextUnit;
+    updateUnitLimits(row, after, unitChoices(select));
+    return true;
+  }
+  function preferredUnit(select, system) {
+    const choices = unitChoices(select);
+    const current = unitChoice(select, select.dataset.currentUnit);
+    const group = current.group;
+    if (system === 'Field') {
+      const remembered = choices.find((choice) => choice.unit === select.dataset.lastFieldUnit && choice.group === group);
+      if (remembered && remembered.system !== 'SI') return remembered.unit;
+    }
+    return (choices.find((choice) => choice.group === group &&
+      (choice.system === system || choice.system === 'both')) || choices[0]).unit;
+  }
+  function applyBulkUnits(root, system) {
+    root.querySelectorAll('select.unit-select').forEach((select) => {
+      setFieldUnit(select, preferredUnit(select, system));
+    });
+  }
+  function updateTopUnitIndicator() {
+    const selectors = Array.from(sandForm.querySelectorAll('select.unit-select'));
+    const systems = selectors.map((select) => unitChoice(select, select.dataset.currentUnit).system);
+    const field = systems.every((system) => system === 'Field' || system === 'both');
+    const si = systems.every((system) => system === 'SI' || system === 'both');
+    unitSystemSelect.value = field && si ? lastBulkSystem : (field ? 'Field' : (si ? 'SI' : 'Custom'));
+  }
+  sandForm.addEventListener('change', (event) => {
+    if (!event.target.matches('select.unit-select')) return;
+    setFieldUnit(event.target, event.target.value);
+    updateTopUnitIndicator();
+  });
+  unitSystemSelect.addEventListener('change', () => {
+    lastBulkSystem = unitSystemSelect.value;
+    applyBulkUnits(sandForm, lastBulkSystem);
+    updateTopUnitIndicator();
+  });
+
   function setupRepeater({ container, template, addBtn, maxCount, labelSingular, onAdd }) {
     let count = 0;
 
@@ -543,6 +661,7 @@ JS = """
       if (count >= maxCount) return null;
       const node = template.content.cloneNode(true);
       const section = node.querySelector('.interval-instance');
+      applyBulkUnits(section, lastBulkSystem);
       const removeBtn = section.querySelector(':scope > .interval-banner .remove-interval-btn');
       removeBtn.addEventListener('click', () => {
         if (count <= 1) {
@@ -551,12 +670,14 @@ JS = """
         }
         section.remove();
         renumber();
+        updateTopUnitIndicator();
       });
       section.addEventListener('change', () => evaluateVisibility(section));
       container.appendChild(node);
       renumber();
       evaluateVisibility(section);
       if (onAdd) onAdd(section);
+      updateTopUnitIndicator();
       return section;
     }
 
@@ -566,6 +687,7 @@ JS = """
       if (!last) return;
       last.remove();
       renumber();
+      updateTopUnitIndicator();
     }
 
     addBtn.addEventListener('click', add);
@@ -653,7 +775,10 @@ JS = """
   function findBucketParamValue(bucket, parameter) {
     for (const subcategories of Object.values(bucket || {})) {
       for (const parameters of Object.values(subcategories)) {
-        if (Object.hasOwn(parameters, parameter)) return parameters[parameter];
+        if (Object.hasOwn(parameters, parameter)) {
+          const value = parameters[parameter];
+          return isObject(value) ? value.value : value;
+        }
       }
     }
     return null;
@@ -661,9 +786,15 @@ JS = """
 
   function collectBucket(root) {
     const bucket = {};
-    walkFields(root, true, (sub, fr) => {
-      const value = readFieldValue(fr);
-      if (value !== null) putBucketValue(bucket, sub.dataset.category, sub.dataset.subcategory, fieldParam(fr), value);
+    // An explicit unit is part of the state even if a field is blank or
+    // temporarily hidden. Hidden answers are still omitted.
+    walkFields(root, false, (sub, fr) => {
+      const unit = fieldUnit(fr);
+      const value = isRuleHidden(fr) ? null : readFieldValue(fr);
+      if (unit !== null || value !== null) {
+        putBucketValue(bucket, sub.dataset.category, sub.dataset.subcategory,
+          fieldParam(fr), unit === null ? value : { value, unit });
+      }
     });
     return bucket;
   }
@@ -715,9 +846,11 @@ JS = """
         const value = bucketValue(values, category, subcategory, parameter);
         const comment = bucketValue(comments, category, subcategory, parameter);
         if (value === null && comment === null) return;
+        const bare = isObject(value) ? value.value : value;
+        const unit = isObject(value) ? value.unit : '';
         rows.push([category, subcategory, parameter, compIndex, sandIndex,
-          Array.isArray(value) ? JSON.stringify(value) : (value ?? ''),
-          fr.querySelector('.field-unit').textContent, comment ?? '', 'field']);
+          Array.isArray(bare) ? JSON.stringify(bare) : (bare ?? ''),
+          unit, comment ?? '', 'field']);
       });
     }
     pushFields(wellSection, record.well, record.comments.well, '', '');
@@ -834,14 +967,17 @@ JS = """
       }
       const fieldRow = findFieldRow(root, category, subcategory, parameter);
       if (!fieldRow) throw new Error('Unknown CSV field: ' + parameter);
-      if (unit !== fieldRow.querySelector('.field-unit').textContent) {
-        throw new Error('Unit does not match this form for ' + parameter + '.');
-      }
-      if (value !== '') {
-        const control = fieldRow.querySelector('[data-kind]');
-        const parsed = control.dataset.kind === 'multi_number' ? JSON.parse(value) : value;
+      const unitElement = fieldRow.querySelector('.field-unit');
+      const choices = unitElement.tagName === 'SELECT' ? unitChoices(unitElement).map((choice) => choice.unit) :
+        (unitElement.dataset.unit ? [unitElement.dataset.unit] : []);
+      if (choices.length && !choices.includes(unit)) throw new Error('Unknown unit for ' + parameter + '.');
+      if (!choices.length && unit !== '') throw new Error('Unexpected unit for ' + parameter + '.');
+      const control = fieldRow.querySelector('[data-kind]');
+      const parsed = value === '' ? null : (control.dataset.kind === 'multi_number' ? JSON.parse(value) : value);
+      if (choices.length || parsed !== null) {
         if (bucketValue(values, category, subcategory, parameter) !== null) throw new Error('Duplicate CSV field: ' + parameter);
-        putBucketValue(values, category, subcategory, parameter, parsed);
+        putBucketValue(values, category, subcategory, parameter,
+          choices.length ? { value: parsed, unit } : parsed);
       }
       if (comment !== '') putBucketValue(comments, category, subcategory, parameter, comment);
     }
@@ -875,13 +1011,27 @@ JS = """
             if (typeof value !== 'string') throw new Error('Comment must be text: ' + parameter);
             continue;
           }
+          const unitElement = row.querySelector('.field-unit');
+          const allowedUnits = unitElement.tagName === 'SELECT' ?
+            unitChoices(unitElement).map((choice) => choice.unit) :
+            (unitElement.dataset.unit ? [unitElement.dataset.unit] : []);
+          if (allowedUnits.length) {
+            if (!isObject(value) || !Object.hasOwn(value, 'value') ||
+                !Object.hasOwn(value, 'unit') || !allowedUnits.includes(value.unit)) {
+              throw new Error('Invalid value or unit for ' + parameter + '.');
+            }
+          } else if (isObject(value)) {
+            throw new Error('Unexpected unit for ' + parameter + '.');
+          }
+          const bare = allowedUnits.length ? value.value : value;
+          if (bare === null) continue;  // An empty measurement still has a saved unit.
           const control = row.querySelector('[data-kind]');
           if (control.dataset.kind === 'multi_number') {
-            if (!Array.isArray(value) || value.length !== control.querySelectorAll('input').length ||
-                value.some((v) => typeof v !== 'string' && typeof v !== 'number')) {
+            if (!Array.isArray(bare) || bare.length !== control.querySelectorAll('input').length ||
+                bare.some((v) => typeof v !== 'string' && typeof v !== 'number')) {
               throw new Error('Invalid multi-value field: ' + parameter);
             }
-          } else if (typeof value !== 'string' && typeof value !== 'number') {
+          } else if (typeof bare !== 'string' && typeof bare !== 'number') {
             throw new Error('Invalid field value: ' + parameter);
           } else if (control.tagName === 'SELECT') {
             let options = Array.from(control.options).map((option) => option.value);
@@ -890,7 +1040,7 @@ JS = """
               const [triggerName, byValue] = Object.entries(config)[0];
               options = byValue[findBucketParamValue(bucket, triggerName)] || [];
             }
-            if (!options.includes(String(value))) throw new Error('Unknown option for ' + parameter + '.');
+            if (!options.includes(String(bare))) throw new Error('Unknown option for ' + parameter + '.');
           }
         }
       }
@@ -959,11 +1109,23 @@ JS = """
           if (commentsOnly) {
             row.querySelector('.field-comment').value = value;
           } else {
+            const unitElement = row.querySelector('.field-unit');
+            if (unitElement.tagName === 'SELECT' && isObject(value)) {
+              unitElement.value = value.unit;
+              unitElement.dataset.currentUnit = value.unit;
+              const choice = unitChoice(unitElement, value.unit);
+              if (choice.system === 'Field' || choice.system === 'both') {
+                unitElement.dataset.lastFieldUnit = value.unit;
+              }
+              updateUnitLimits(row, choice, unitChoices(unitElement));
+            }
+            const bare = isObject(value) ? value.value : value;
+            if (bare === null) continue;
             const control = row.querySelector('[data-kind]');
             if (control.dataset.kind === 'multi_number') {
-              control.querySelectorAll('input').forEach((input, i) => { input.value = value[i]; });
+              control.querySelectorAll('input').forEach((input, i) => { input.value = bare[i]; });
             } else {
-              control.value = value;
+              control.value = bare;
             }
           }
         }
@@ -994,6 +1156,10 @@ JS = """
         evaluateVisibility(sb);
       });
     });
+    updateTopUnitIndicator();
+    // A mixed imported record has no saved bulk choice. New repeaters start
+    // in Field units deterministically, while existing per-field units stay put.
+    lastBulkSystem = unitSystemSelect.value === 'Custom' ? 'Field' : unitSystemSelect.value;
   }
 
   // Exports are named from the well's anonymized label and identification
@@ -1103,7 +1269,8 @@ def render_html(model: dict, max_completion: int = DEFAULT_MAX_COMPLETION,
             .replace("__MAX_COMPLETION__", str(max_completion))
             .replace("__MAX_SAND_BODY__", str(max_sand_bodies))
             .replace("__EXPIRES_ON__", json.dumps(expires_on) if expires_on else "null")
-            .replace("__EXPORT_NAME_PARAMS__", json.dumps(list(EXPORT_NAME_PARAMS))))
+            .replace("__EXPORT_NAME_PARAMS__", json.dumps(list(EXPORT_NAME_PARAMS)))
+            .replace("__CHOICE_DISPLAY__", json.dumps(CHOICE_DISPLAY, ensure_ascii=False)))
 
     if expires_on:
         cutoff = date.fromisoformat(expires_on)
@@ -1124,6 +1291,10 @@ def render_html(model: dict, max_completion: int = DEFAULT_MAX_COMPLETION,
 <header class="page-header">
   <h1>Sand Control Failure Record Form &mdash; Producer Wells</h1>
   <p>Import a saved file, save an unfinished draft, or export a completed record. JSON and CSV are available for both saves. Hover the <strong>?</strong> icon next to a field for guidance.</p>
+  <div class="unit-toolbar"><label for="unit-system">Units</label>
+    <select id="unit-system" aria-label="Units for the form"><option value="Field" selected>Field</option><option value="SI">SI</option><option value="Custom" disabled>Custom</option></select>
+    <small>Changing units converts entered values. Standard gas volumes use 60°F and 14.73 psia on both sides.</small>
+  </div>
   {validity_notice}
   <p id="expired-banner" class="expired-banner" style="display:none;">
     This form has expired and is no longer accepting submissions. Please contact your Sand Control Failure DB

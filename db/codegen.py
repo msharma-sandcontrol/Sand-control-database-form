@@ -19,7 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from db.naming import derive_column_names  # noqa: E402
+from db.naming import MAX_IDENTIFIER_LENGTH, derive_column_names, slugify  # noqa: E402
 from db.type_mapping import sqla_type_for  # noqa: E402
 from dictionary import (  # noqa: E402
     COMPLETION_SCOPE,
@@ -32,6 +32,7 @@ from dictionary import (  # noqa: E402
     target_rules,
 )
 from dictionary.models import FieldSpec  # noqa: E402
+from dictionary.units import choices_for  # noqa: E402
 
 MASTER_XLSX = REPO_ROOT / "MASTER.xlsx"
 GENERATED_DIR = Path(__file__).resolve().parent / "generated"
@@ -67,7 +68,11 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
         for row in scope_rows:
             spec = classify_field(row)
             col_names = derive_column_names(row.parameter, spec.kind, spec.multi_labels)
-            for name in col_names:
+            unit_choices = choices_for(row)
+            unit_column = f"{slugify(row.parameter)}_unit" if len(unit_choices) > 1 else None
+            if unit_column and len(unit_column) > MAX_IDENTIFIER_LENGTH:
+                raise CodegenError(f"unit column name exceeds Postgres limit: {unit_column}")
+            for name in col_names + ([unit_column] if unit_column else []):
                 if name in seen:
                     raise CodegenError(
                         f"column name collision in table {table_name!r}: {name!r} "
@@ -76,6 +81,8 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
                 seen.add(name)
             type_name = _column_type_name(row, spec)
             columns.extend((name, type_name, row.parameter) for name in col_names)
+            if unit_column:
+                columns.append((unit_column, "Text", f"Unit for {row.parameter}"))
 
             registry_key = f"{scope_key}::{row.category}::{row.subcategory}::{row.parameter}"
             entry = {
@@ -97,6 +104,8 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
                 "max_length": spec.max_length,
                 "pattern": spec.pattern,
                 "unit": row.unit,
+                "unit_choices": unit_choices,
+                "unit_column": unit_column,
             }
             if spec.options_by:
                 entry["options_by"] = spec.options_by

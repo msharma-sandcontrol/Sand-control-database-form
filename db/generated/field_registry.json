@@ -20,6 +20,23 @@
     "subcategory": "Cased Hole Details",
     "table": "completion_interval",
     "unit": "inch",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 2.54,
+        "system": "Field",
+        "unit": "inch"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "cm"
+      }
+    ],
+    "unit_column": "casing_size_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -56,6 +73,8 @@
     "subcategory": "Cased Hole Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -89,6 +108,23 @@
     "subcategory": "Cased Hole Details",
     "table": "completion_interval",
     "unit": "ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.3048,
+        "system": "Field",
+        "unit": "ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "m"
+      }
+    ],
+    "unit_column": "gross_perf_length_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -122,6 +158,23 @@
     "subcategory": "Cased Hole Details",
     "table": "completion_interval",
     "unit": "ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.3048,
+        "system": "Field",
+        "unit": "ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "m"
+      }
+    ],
+    "unit_column": "net_perf_length_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -155,6 +208,23 @@
     "subcategory": "Cased Hole Details",
     "table": "completion_interval",
     "unit": "psi",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 6.894757293168361,
+        "system": "Field",
+        "unit": "psi"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa"
+      }
+    ],
+    "unit_column": "ob_ob_magnitude_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -192,6 +262,8 @@
     "subcategory": "Cased Hole Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -225,6 +297,23 @@
     "subcategory": "Cased Hole Details",
     "table": "completion_interval",
     "unit": "inch",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 2.54,
+        "system": "Field",
+        "unit": "inch"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "cm"
+      }
+    ],
+    "unit_column": "perforation_gun_size_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -258,6 +347,23 @@
     "subcategory": "Cased Hole Details",
     "table": "completion_interval",
     "unit": "shots/ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 3.280839895013123,
+        "system": "Field",
+        "unit": "shots/ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "shots/m"
+      }
+    ],
+    "unit_column": "perforation_spf_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -296,6 +402,8 @@
     "subcategory": "Cased Hole Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -331,7 +439,9 @@
     "step": null,
     "subcategory": "Completion Details",
     "table": "completion_interval",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "completion_interval::Completion::Completion Details::Sandface Completion Date": {
     "category": "Completion",
@@ -353,7 +463,9 @@
     "step": null,
     "subcategory": "Completion Details",
     "table": "completion_interval",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "completion_interval::Completion::Gravel Packing::% Pack through Shunts": {
     "category": "Completion",
@@ -376,6 +488,16 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "%",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "%"
+      }
+    ],
+    "unit_column": null,
     "visibility": {
       "hide": [
         {
@@ -431,6 +553,23 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "ppg",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.11982642731689663,
+        "system": "Field",
+        "unit": "ppg"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "g/cm\u00b3"
+      }
+    ],
+    "unit_column": "carrier_fluid_density_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -480,6 +619,8 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -541,6 +682,8 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -601,6 +744,8 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -658,6 +803,8 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -712,6 +859,23 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "ppa",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 119.82642731689663,
+        "system": "Field",
+        "unit": "ppa"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kg/m\u00b3 clean fluid"
+      }
+    ],
+    "unit_column": "max_proppant_concentration_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -757,6 +921,23 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "bpm",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 2.6497882488,
+        "system": "Field",
+        "unit": "bpm"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "L/s"
+      }
+    ],
+    "unit_column": "max_pump_rate_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -802,6 +983,23 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "psi",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 6.894757293168361,
+        "system": "Field",
+        "unit": "psi"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa"
+      }
+    ],
+    "unit_column": "net_pressure_gain_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -852,6 +1050,16 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "%",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "%"
+      }
+    ],
+    "unit_column": null,
     "visibility": {
       "hide": [
         {
@@ -924,6 +1132,8 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -986,6 +1196,23 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "lbs/ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1.4881639435695537,
+        "system": "Field",
+        "unit": "lbs/ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kg/m"
+      }
+    ],
+    "unit_column": "perf_packing_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -1043,6 +1270,8 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -1091,6 +1320,8 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -1145,6 +1376,23 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "lbs/ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1.4881639435695537,
+        "system": "Field",
+        "unit": "lbs/ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kg/m"
+      }
+    ],
+    "unit_column": "proppant_unit_length_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -1206,6 +1454,8 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -1254,6 +1504,8 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -1299,6 +1551,16 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "%",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "%"
+      }
+    ],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -1364,6 +1626,8 @@
     "subcategory": "Gravel Packing",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [
         {
@@ -1422,6 +1686,8 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -1471,6 +1737,8 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -1525,6 +1793,16 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "micron",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "micron"
+      }
+    ],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -1568,6 +1846,8 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -1617,6 +1897,8 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -1674,6 +1956,8 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -1728,6 +2012,23 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "inch",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 2.54,
+        "system": "Field",
+        "unit": "inch"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "cm"
+      }
+    ],
+    "unit_column": "screen_base_pipe_size_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -1765,6 +2066,23 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "gauge or micron",
+    "unit_choices": [
+      {
+        "group": "opening",
+        "offset": 0,
+        "scale": 25.4,
+        "system": "Field",
+        "unit": "screen gauge"
+      },
+      {
+        "group": "opening",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "micron"
+      }
+    ],
+    "unit_column": "screen_gauge_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -1808,6 +2126,8 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -1851,6 +2171,8 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -1897,6 +2219,8 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -1943,6 +2267,8 @@
     "subcategory": "Liners and Screens",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -1984,6 +2310,8 @@
     "subcategory": "OH Drilling Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -2017,6 +2345,23 @@
     "subcategory": "OH Drilling Details",
     "table": "completion_interval",
     "unit": "lb/bbl",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 2.8530101742118243,
+        "system": "Field",
+        "unit": "lb/bbl"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kg/m\u00b3"
+      }
+    ],
+    "unit_column": "bridging_agent_loading_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -2050,6 +2395,8 @@
     "subcategory": "OH Drilling Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -2088,6 +2435,8 @@
     "subcategory": "OH Drilling Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -2121,6 +2470,16 @@
     "subcategory": "OH Drilling Details",
     "table": "completion_interval",
     "unit": "L",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "L"
+      }
+    ],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -2154,6 +2513,23 @@
     "subcategory": "OH Drilling Details",
     "table": "completion_interval",
     "unit": "ppg",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.11982642731689663,
+        "system": "Field",
+        "unit": "ppg"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "g/cm\u00b3"
+      }
+    ],
+    "unit_column": "reservoir_drilling_fluid_density_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -2192,6 +2568,8 @@
     "subcategory": "OH Drilling Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -2232,6 +2610,8 @@
     "subcategory": "OH Drilling Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -2265,6 +2645,23 @@
     "subcategory": "OH Drilling Details",
     "table": "completion_interval",
     "unit": "lb/bbl",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 2.8530101742118243,
+        "system": "Field",
+        "unit": "lb/bbl"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kg/m\u00b3"
+      }
+    ],
+    "unit_column": "weighting_agent_loading_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -2298,6 +2695,23 @@
     "subcategory": "Open Hole Details",
     "table": "completion_interval",
     "unit": "inch",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 2.54,
+        "system": "Field",
+        "unit": "inch"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "cm"
+      }
+    ],
+    "unit_column": "casing_size_above_oh_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -2334,6 +2748,8 @@
     "subcategory": "Open Hole Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -2367,6 +2783,23 @@
     "subcategory": "Open Hole Details",
     "table": "completion_interval",
     "unit": "ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.3048,
+        "system": "Field",
+        "unit": "ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "m"
+      }
+    ],
+    "unit_column": "gross_open_hole_length_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -2400,6 +2833,23 @@
     "subcategory": "Open Hole Details",
     "table": "completion_interval",
     "unit": "inch",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 2.54,
+        "system": "Field",
+        "unit": "inch"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "cm"
+      }
+    ],
+    "unit_column": "hole_size_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -2433,6 +2883,23 @@
     "subcategory": "Open Hole Details",
     "table": "completion_interval",
     "unit": "ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.3048,
+        "system": "Field",
+        "unit": "ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "m"
+      }
+    ],
+    "unit_column": "net_pay_length_unit",
     "visibility": {
       "hide": [],
       "show": [],
@@ -2469,6 +2936,8 @@
     "subcategory": "Open Hole Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [],
@@ -2506,6 +2975,8 @@
     "subcategory": "Sand Control Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -2542,6 +3013,8 @@
     "subcategory": "Sand Control Details",
     "table": "completion_interval",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -2582,7 +3055,9 @@
     "step": null,
     "subcategory": "Sand Control Details",
     "table": "completion_interval",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "completion_interval::Sand Bodies::Sand Bodies::Number of sand bodies": {
     "category": "Sand Bodies",
@@ -2604,7 +3079,9 @@
     "step": 1,
     "subcategory": "Sand Bodies",
     "table": "completion_interval",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "completion_interval::Wellbore::Wellbore properties::Well Deviation": {
     "category": "Wellbore",
@@ -2626,7 +3103,17 @@
     "step": null,
     "subcategory": "Wellbore properties",
     "table": "completion_interval",
-    "unit": "degrees"
+    "unit": "degrees",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "degrees"
+      }
+    ],
+    "unit_column": null
   },
   "sand_body::Pre-production and cleanup::Pre-production and cleanup details::Percentage of ideal PI or skin achieved": {
     "category": "Pre-production and cleanup",
@@ -2648,7 +3135,17 @@
     "step": 1,
     "subcategory": "Pre-production and cleanup details",
     "table": "sand_body",
-    "unit": "%"
+    "unit": "%",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "%"
+      }
+    ],
+    "unit_column": null
   },
   "sand_body::Pre-production and cleanup::Pre-production and cleanup details::Remedial Acid Helped Productivity": {
     "category": "Pre-production and cleanup",
@@ -2676,7 +3173,9 @@
     "step": null,
     "subcategory": "Pre-production and cleanup details",
     "table": "sand_body",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "sand_body::Pre-production and cleanup::Pre-production and cleanup details::Remedial Acid Pumped as Productivity was Below Expectation": {
     "category": "Pre-production and cleanup",
@@ -2703,7 +3202,9 @@
     "step": null,
     "subcategory": "Pre-production and cleanup details",
     "table": "sand_body",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "sand_body::Pre-production and cleanup::Pre-production and cleanup details::Remedial Acid Type": {
     "category": "Pre-production and cleanup",
@@ -2733,7 +3234,9 @@
     "step": null,
     "subcategory": "Pre-production and cleanup details",
     "table": "sand_body",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Core Derived Min Rock UCS": {
     "category": "Reservoir Characterization",
@@ -2755,7 +3258,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "psi"
+    "unit": "psi",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 6.894757293168361,
+        "system": "Field",
+        "unit": "psi"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa"
+      }
+    ],
+    "unit_column": "core_derived_min_rock_ucs_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Core Derived P50 Rock UCS": {
     "category": "Reservoir Characterization",
@@ -2777,7 +3297,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "psi"
+    "unit": "psi",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 6.894757293168361,
+        "system": "Field",
+        "unit": "psi"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa"
+      }
+    ],
+    "unit_column": "core_derived_p50_rock_ucs_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Fines Content (Sub 44 microns)": {
     "category": "Reservoir Characterization",
@@ -2799,7 +3336,17 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "%"
+    "unit": "%",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "%"
+      }
+    ],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Fluid Type": {
     "category": "Reservoir Characterization",
@@ -2826,7 +3373,9 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Frac gradient": {
     "category": "Reservoir Characterization",
@@ -2848,7 +3397,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "ppg"
+    "unit": "ppg",
+    "unit_choices": [
+      {
+        "group": "gradient",
+        "offset": 0,
+        "scale": 1.1750958334472443,
+        "system": "Field",
+        "unit": "ppg"
+      },
+      {
+        "group": "gradient",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa/m"
+      }
+    ],
+    "unit_column": "frac_gradient_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Initial PI": {
     "category": "Reservoir Characterization",
@@ -2870,7 +3436,38 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "stb/d/psi or mmscf/d/psi"
+    "unit": "stb/d/psi or mmscf/d/psi",
+    "unit_choices": [
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 0.02305915758420269,
+        "system": "Field",
+        "unit": "stb/d/psi"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 4107.011369357066,
+        "system": "Field",
+        "unit": "MMSCF/d/psi"
+      },
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3 liquid/d/kPa"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3 gas/d/kPa"
+      }
+    ],
+    "unit_column": "initial_pi_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Initial Total Skin from PTA": {
     "category": "Reservoir Characterization",
@@ -2892,7 +3489,9 @@
     "step": 1,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Oil Bubble Point (Pb)": {
     "category": "Reservoir Characterization",
@@ -2914,7 +3513,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "psi"
+    "unit": "psi",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 6.894757293168361,
+        "system": "Field",
+        "unit": "psi"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa"
+      }
+    ],
+    "unit_column": "oil_bubble_point_pb_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Oil Formation Volume Factor (Bo) at downhole conditions": {
     "category": "Reservoir Characterization",
@@ -2936,7 +3552,9 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::PSD D10/D25/D40/D50/D75/D90": {
     "category": "Reservoir Characterization",
@@ -2963,7 +3581,17 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "micron"
+    "unit": "micron",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "micron"
+      }
+    ],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::PSD Measurement Method": {
     "category": "Reservoir Characterization",
@@ -2988,7 +3616,9 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Permeability": {
     "category": "Reservoir Characterization",
@@ -3010,7 +3640,17 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "md"
+    "unit": "md",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "md"
+      }
+    ],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Porosity": {
     "category": "Reservoir Characterization",
@@ -3032,7 +3672,17 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "%"
+    "unit": "%",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "%"
+      }
+    ],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Producing Fluid Viscosity": {
     "category": "Reservoir Characterization",
@@ -3054,7 +3704,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "cP"
+    "unit": "cP",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.001,
+        "system": "Field",
+        "unit": "cP"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Pa\u00b7s"
+      }
+    ],
+    "unit_column": "producing_fluid_viscosity_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Reservoir Pressure at Time of Completion": {
     "category": "Reservoir Characterization",
@@ -3076,7 +3743,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "psi"
+    "unit": "psi",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 6.894757293168361,
+        "system": "Field",
+        "unit": "psi"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa"
+      }
+    ],
+    "unit_column": "reservoir_pressure_at_time_of_completion_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Reservoir Temperature": {
     "category": "Reservoir Characterization",
@@ -3098,7 +3782,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "degF"
+    "unit": "degF",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": -17.77777777777778,
+        "scale": 0.5555555555555556,
+        "system": "Field",
+        "unit": "degF"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "\u00b0C"
+      }
+    ],
+    "unit_column": "reservoir_temperature_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Reservoir pressure at first sand production": {
     "category": "Reservoir Characterization",
@@ -3120,7 +3821,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "psi"
+    "unit": "psi",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 6.894757293168361,
+        "system": "Field",
+        "unit": "psi"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa"
+      }
+    ],
+    "unit_column": "reservoir_pressure_at_first_sand_production_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Rock compressibility at first sand production": {
     "category": "Reservoir Characterization",
@@ -3142,7 +3860,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "microsips"
+    "unit": "microsips",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1.4503773773020922e-10,
+        "system": "Field",
+        "unit": "microsips"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "1/Pa"
+      }
+    ],
+    "unit_column": "rock_compressibility_at_first_sand_production_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Rock compressibility at initial reservoir pressure": {
     "category": "Reservoir Characterization",
@@ -3164,7 +3899,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "microsips"
+    "unit": "microsips",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1.4503773773020922e-10,
+        "system": "Field",
+        "unit": "microsips"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "1/Pa"
+      }
+    ],
+    "unit_column": "rock_compressibility_at_initial_reservoir_pressure_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Shale Reactivity CEC": {
     "category": "Reservoir Characterization",
@@ -3186,7 +3938,9 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Solution Gas Ratio (Rs)": {
     "category": "Reservoir Characterization",
@@ -3208,7 +3962,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "scf/stb"
+    "unit": "scf/stb",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.17810760667903527,
+        "system": "Field",
+        "unit": "scf/stb"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3/Sm\u00b3"
+      }
+    ],
+    "unit_column": "solution_gas_ratio_rs_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Source of sand sample": {
     "category": "Reservoir Characterization",
@@ -3235,7 +4006,9 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Virgin Reservoir Pressure": {
     "category": "Reservoir Characterization",
@@ -3257,7 +4030,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "psi"
+    "unit": "psi",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 6.894757293168361,
+        "system": "Field",
+        "unit": "psi"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa"
+      }
+    ],
+    "unit_column": "virgin_reservoir_pressure_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::k.h from Log": {
     "category": "Reservoir Characterization",
@@ -3279,7 +4069,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "md-ft"
+    "unit": "md-ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.3048,
+        "system": "Field",
+        "unit": "md-ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "md-m"
+      }
+    ],
+    "unit_column": "k_h_from_log_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::k.h from PTA": {
     "category": "Reservoir Characterization",
@@ -3301,7 +4108,24 @@
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
     "table": "sand_body",
-    "unit": "md-ft"
+    "unit": "md-ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.3048,
+        "system": "Field",
+        "unit": "md-ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "md-m"
+      }
+    ],
+    "unit_column": "k_h_from_pta_unit"
   },
   "well::Completion Intervals::Completion Intervals::Number of Completion Intervals": {
     "category": "Completion Intervals",
@@ -3323,7 +4147,9 @@
     "step": 1,
     "subcategory": "Completion Intervals",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::General Information::Data Origin & Disclosure::Data confidence level": {
     "category": "General Information",
@@ -3349,7 +4175,9 @@
     "step": null,
     "subcategory": "Data Origin & Disclosure",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::General Information::Data Origin & Disclosure::Data source": {
     "category": "General Information",
@@ -3377,7 +4205,9 @@
     "step": null,
     "subcategory": "Data Origin & Disclosure",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::General Information::Data Origin & Disclosure::Notes / comments": {
     "category": "General Information",
@@ -3399,7 +4229,9 @@
     "step": null,
     "subcategory": "Data Origin & Disclosure",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Failure Confirmation::Sand failure": {
     "category": "Well Specific",
@@ -3424,7 +4256,9 @@
     "step": null,
     "subcategory": "Failure Confirmation",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Current well status": {
     "category": "Well Specific",
@@ -3452,7 +4286,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Did sanding start immediately after water breakthrough": {
     "category": "Well Specific",
@@ -3478,6 +4314,8 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -3510,7 +4348,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Gas Rate @ Shut-in": {
     "category": "Well Specific",
@@ -3533,6 +4373,23 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "mmscf/d",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 28316.846592000005,
+        "system": "Field",
+        "unit": "mmscf/d"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3/d"
+      }
+    ],
+    "unit_column": "gas_rate_shut_in_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -3566,6 +4423,23 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "mmscf/d",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 28316.846592000005,
+        "system": "Field",
+        "unit": "mmscf/d"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3/d"
+      }
+    ],
+    "unit_column": "gas_rate_the_first_choke_back_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -3603,6 +4477,8 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -3635,7 +4511,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Initial PI": {
     "category": "Well Specific",
@@ -3657,7 +4535,38 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": "stb/d/psi or mmscf/d/psi"
+    "unit": "stb/d/psi or mmscf/d/psi",
+    "unit_choices": [
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 0.02305915758420269,
+        "system": "Field",
+        "unit": "stb/d/psi"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 4107.011369357066,
+        "system": "Field",
+        "unit": "MMSCF/d/psi"
+      },
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3 liquid/d/kPa"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3 gas/d/kPa"
+      }
+    ],
+    "unit_column": "initial_pi_unit"
   },
   "well::Well Specific::Sand Production & Well Performance::Initial non-Darcy skin": {
     "category": "Well Specific",
@@ -3679,7 +4588,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Initial total skin": {
     "category": "Well Specific",
@@ -3701,7 +4612,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Known sand face production chemistry issues": {
     "category": "Well Specific",
@@ -3723,7 +4636,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Last production date": {
     "category": "Well Specific",
@@ -3745,7 +4660,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Lessons learned classification / RCFA outcomes": {
     "category": "Well Specific",
@@ -3768,6 +4685,8 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -3800,7 +4719,24 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": "psi"
+    "unit": "psi",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 6.894757293168361,
+        "system": "Field",
+        "unit": "psi"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa"
+      }
+    ],
+    "unit_column": "max_drawdown_over_well_life_unit"
   },
   "well::Well Specific::Sand Production & Well Performance::Mechanical / Completion skin after choke-back": {
     "category": "Well Specific",
@@ -3823,6 +4759,8 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -3856,6 +4794,8 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -3889,6 +4829,23 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "stb/d",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.158987294928,
+        "system": "Field",
+        "unit": "stb/d"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3/d"
+      }
+    ],
+    "unit_column": "oil_rate_shut_in_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -3922,6 +4879,23 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "stb/d",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.158987294928,
+        "system": "Field",
+        "unit": "stb/d"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3/d"
+      }
+    ],
+    "unit_column": "oil_rate_the_first_choke_back_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -3954,7 +4928,24 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": "psi"
+    "unit": "psi",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 6.894757293168361,
+        "system": "Field",
+        "unit": "psi"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "kPa"
+      }
+    ],
+    "unit_column": "p50_drawdown_over_well_life_unit"
   },
   "well::Well Specific::Sand Production & Well Performance::Peak gas rate": {
     "category": "Well Specific",
@@ -3976,7 +4967,24 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": "mmscf/d"
+    "unit": "mmscf/d",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 28316.846592000005,
+        "system": "Field",
+        "unit": "mmscf/d"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3/d"
+      }
+    ],
+    "unit_column": "peak_gas_rate_unit"
   },
   "well::Well Specific::Sand Production & Well Performance::Peak oil rate": {
     "category": "Well Specific",
@@ -3998,7 +5006,24 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": "stb/d"
+    "unit": "stb/d",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.158987294928,
+        "system": "Field",
+        "unit": "stb/d"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3/d"
+      }
+    ],
+    "unit_column": "peak_oil_rate_unit"
   },
   "well::Well Specific::Sand Production & Well Performance::Peak water cut": {
     "category": "Well Specific",
@@ -4020,7 +5045,17 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": "%"
+    "unit": "%",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "%"
+      }
+    ],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Peak water rate": {
     "category": "Well Specific",
@@ -4042,7 +5077,24 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": "stb/d"
+    "unit": "stb/d",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.158987294928,
+        "system": "Field",
+        "unit": "stb/d"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3/d"
+      }
+    ],
+    "unit_column": "peak_water_rate_unit"
   },
   "well::Well Specific::Sand Production & Well Performance::Post shut-in oil/gas production rate response": {
     "category": "Well Specific",
@@ -4071,7 +5123,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Post-shut-in sand response": {
     "category": "Well Specific",
@@ -4100,7 +5154,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Post-shut-in water-cut response": {
     "category": "Well Specific",
@@ -4129,7 +5185,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Sand failure mechanism": {
     "category": "Well Specific",
@@ -4171,6 +5229,8 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -4204,6 +5264,37 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "pptb or lb/mmscf",
+    "unit_choices": [
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 2.8530101742118243,
+        "system": "Field",
+        "unit": "pptb"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 16.018463373960138,
+        "system": "Field",
+        "unit": "lb/MMSCF"
+      },
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "mg/L liquid"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "mg/Sm\u00b3 gas"
+      }
+    ],
+    "unit_column": "sand_production_rate_at_complete_well_failure_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -4237,6 +5328,37 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "pptb or lb/mmscf",
+    "unit_choices": [
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 2.8530101742118243,
+        "system": "Field",
+        "unit": "pptb"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 16.018463373960138,
+        "system": "Field",
+        "unit": "lb/MMSCF"
+      },
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "mg/L liquid"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "mg/Sm\u00b3 gas"
+      }
+    ],
+    "unit_column": "sand_production_rate_at_first_choke_back_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -4270,6 +5392,37 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "pptb or lb/mmscf",
+    "unit_choices": [
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 2.8530101742118243,
+        "system": "Field",
+        "unit": "pptb"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 16.018463373960138,
+        "system": "Field",
+        "unit": "lb/MMSCF"
+      },
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "mg/L liquid"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "mg/Sm\u00b3 gas"
+      }
+    ],
+    "unit_column": "sand_production_rate_at_well_shut_in_due_to_sand_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -4307,6 +5460,8 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -4371,6 +5526,8 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -4404,6 +5561,16 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "days",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "days"
+      }
+    ],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -4437,6 +5604,16 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "days",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "days"
+      }
+    ],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -4470,6 +5647,16 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "days",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "days"
+      }
+    ],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -4503,6 +5690,8 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [],
       "show": [
@@ -4541,7 +5730,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Sand Production & Well Performance::Water Rate @ Shut-in": {
     "category": "Well Specific",
@@ -4564,6 +5755,23 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "stb/d",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.158987294928,
+        "system": "Field",
+        "unit": "stb/d"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3/d"
+      }
+    ],
+    "unit_column": "water_rate_shut_in_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -4597,6 +5805,23 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "stb/d",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.158987294928,
+        "system": "Field",
+        "unit": "stb/d"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3/d"
+      }
+    ],
+    "unit_column": "water_rate_the_first_choke_back_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -4630,6 +5855,37 @@
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
     "unit": "stb/d/psi or mmscf/d/psi",
+    "unit_choices": [
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 0.02305915758420269,
+        "system": "Field",
+        "unit": "stb/d/psi"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 4107.011369357066,
+        "system": "Field",
+        "unit": "MMSCF/d/psi"
+      },
+      {
+        "group": "liquid",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3 liquid/d/kPa"
+      },
+      {
+        "group": "gas",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "Sm\u00b3 gas/d/kPa"
+      }
+    ],
+    "unit_column": "well_pi_after_choke_back_unit",
     "visibility": {
       "hide": [],
       "show": [
@@ -4662,7 +5918,9 @@
     "step": null,
     "subcategory": "Sand Production & Well Performance",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Well & Field Identification::Field name": {
     "category": "Well Specific",
@@ -4684,7 +5942,9 @@
     "step": null,
     "subcategory": "Well & Field Identification",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Well & Field Identification::Operating environment": {
     "category": "Well Specific",
@@ -4712,7 +5972,9 @@
     "step": null,
     "subcategory": "Well & Field Identification",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Well & Field Identification::Operator name": {
     "category": "Well Specific",
@@ -4734,7 +5996,9 @@
     "step": null,
     "subcategory": "Well & Field Identification",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Well & Field Identification::Operator type": {
     "category": "Well Specific",
@@ -4764,7 +6028,9 @@
     "step": null,
     "subcategory": "Well & Field Identification",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Well & Field Identification::Region": {
     "category": "Well Specific",
@@ -4803,7 +6069,9 @@
     "step": null,
     "subcategory": "Well & Field Identification",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Well & Field Identification::Tree type": {
     "category": "Well Specific",
@@ -4829,6 +6097,8 @@
     "subcategory": "Well & Field Identification",
     "table": "well",
     "unit": "",
+    "unit_choices": [],
+    "unit_column": null,
     "visibility": {
       "hide": [
         {
@@ -4862,6 +6132,23 @@
     "subcategory": "Well & Field Identification",
     "table": "well",
     "unit": "ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.3048,
+        "system": "Field",
+        "unit": "ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "m"
+      }
+    ],
+    "unit_column": "water_depth_unit",
     "visibility": {
       "hide": [
         {
@@ -4894,7 +6181,24 @@
     "step": null,
     "subcategory": "Well & Field Identification",
     "table": "well",
-    "unit": "ft"
+    "unit": "ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.3048,
+        "system": "Field",
+        "unit": "ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "m"
+      }
+    ],
+    "unit_column": "well_td_md_unit"
   },
   "well::Well Specific::Well & Field Identification::Well TD, TVD (RKB)": {
     "category": "Well Specific",
@@ -4916,7 +6220,24 @@
     "step": null,
     "subcategory": "Well & Field Identification",
     "table": "well",
-    "unit": "ft"
+    "unit": "ft",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 0.3048,
+        "system": "Field",
+        "unit": "ft"
+      },
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "SI",
+        "unit": "m"
+      }
+    ],
+    "unit_column": "well_td_tvd_rkb_unit"
   },
   "well::Well Specific::Well & Field Identification::Well identification number (anonymized)": {
     "category": "Well Specific",
@@ -4938,7 +6259,9 @@
     "step": null,
     "subcategory": "Well & Field Identification",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Well & Field Identification::Well name (anonymized)": {
     "category": "Well Specific",
@@ -4960,7 +6283,9 @@
     "step": null,
     "subcategory": "Well & Field Identification",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   },
   "well::Well Specific::Well & Field Identification::Well type": {
     "category": "Well Specific",
@@ -4986,6 +6311,8 @@
     "step": null,
     "subcategory": "Well & Field Identification",
     "table": "well",
-    "unit": ""
+    "unit": "",
+    "unit_choices": [],
+    "unit_column": null
   }
 }
