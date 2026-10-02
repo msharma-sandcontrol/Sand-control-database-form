@@ -9,6 +9,16 @@ form, the PostgreSQL schema, and the FastAPI backend's validation rules.
 web form  -->  FastAPI backend  -->  PostgreSQL
 ```
 
+The standalone form can save incomplete drafts as JSON or CSV and import
+either format later. Both files preserve entered values, comments, and the
+Completion Interval / Sand Body layout. Draft filenames end in _draft; validated
+exports end in _complete. The same status is recorded inside each file, and the
+API rejects files explicitly marked as drafts. Both file formats carry
+`schema_version: 0` while the schema is in development. The API requires that
+version and stores it with submitted records. Version 0 may evolve without a
+version bump until company submissions begin; after that point, freeze a first
+stable version and add explicit compatibility handling for later changes.
+
 This repository is the durable source of truth for the whole system --
 schema, migrations, backend, form, tests, and configuration. It does **not**
 contain the production database itself, any real well data, or any real
@@ -20,6 +30,7 @@ credentials. See "What never belongs in this repo" below.
 MASTER.xlsx            the data dictionary -- shared input to both form/ and db/
 dictionary/             shared parser for MASTER.xlsx (used by form/ and db/)
 form/                   generates the standalone HTML intake form
+docs/                   generated, interactive form logic explorer
 db/                     SQLAlchemy schema, dictionary-driven codegen, Alembic migrations
 backend/                FastAPI app (org-token auth, submit/fetch records)
 tests/                  pytest suite (dictionary, db, migrations, api)
@@ -28,6 +39,39 @@ docker-compose.yml      local Postgres + backend, from zero on any machine
 ```
 
 See [CLAUDE.md](CLAUDE.md) for the full data model and architecture.
+
+## Units and formation volume factors
+
+The form starts in Field units. Each convertible measurement has its own unit
+selector, and the top Field/SI selector converts values across the form. A
+manual liquid/gas basis change asks before clearing a value; changing Well
+type sets the matching basis and clears numbers that cannot be converted.
+Completed exports warn about any remaining populated mismatches; draft saves
+do not. Numeric controls show two decimal places when unfocused, while saved
+JSON/CSV retain the full entered value. Repeated unit switches derive from
+the last value the user entered, so switching back restores its original digits;
+editing the converted number starts a new conversion chain. The API also returns
+database decimals as strings so readback does not lose digits through a JSON
+floating-point number. Sand-body Fluid Type selects Oil Bo or Gas Bg (for
+Condensate, Wet Gas, and Dry Gas) at row 145, with explicit ratio units. See
+[the conversion table](docs/unit_conversion_review.md) for factors and reference
+conditions.
+
+## Explore the form logic
+
+Open [the interactive logic tree](docs/form_logic_tree.html) in a browser to
+inspect the current workbook hierarchy and conditional visibility. Choose
+Well type, Sand failure, Sand rate quantification, and other controlling
+answers to see which rows appear. Hidden rows stay listed, and the tree
+shows which required fields are exempt while hidden. The API uses the same
+visibility rules and rejects answers to hidden questions.
+This is a read-only explanation tool; it does not enter or submit well data.
+
+Regenerate it after changing the workbook:
+
+```
+python docs/generate_form_logic_tree.py
+```
 
 ## Quickstart (Docker)
 
@@ -49,17 +93,14 @@ curl http://localhost:8000/health
 curl http://localhost:8000/docs          # interactive OpenAPI docs
 ```
 
-Submit a record (replace `<token>` with a token from the backend logs):
+Submit a completed file exported by the form (replace `<token>` and the file
+path). The payload must include `schema_version` and all fields required by
+the selected answers; an incomplete draft cannot be submitted:
 
 ```
 curl -X POST http://localhost:8000/records \
   -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
-  -d '{
-        "well": {"Well Specific": {"Well & Field Identification": {
-          "Well name": "TEST-1", "Well identification number": 1
-        }}},
-        "completion_intervals": [{"fields": {}, "sand_bodies": [{}]}]
-      }'
+  --data-binary @/path/to/record_complete.json
 ```
 
 ## Local development without Docker
@@ -80,15 +121,16 @@ uvicorn backend.app.main:app --reload
 ```
 python -m db.codegen              # regenerates db/generated/*.py + field_registry.json
 python form/generate_form.py      # regenerates form/sand_control_form.html
+python docs/generate_form_logic_tree.py  # regenerates docs/form_logic_tree.html
 cd db && alembic revision --autogenerate -m "describe the change"
 # review the generated migration by hand, then:
 alembic upgrade head
 ```
 
 Commit the `MASTER.xlsx` diff, the regenerated `db/generated/*` files, the
-regenerated `form/sand_control_form.html`, and the new migration file
-together. CI re-runs the two regeneration commands and fails the build if
-the committed output doesn't match (the "codegen drift check") -- so a
+regenerated `form/sand_control_form.html`, `docs/form_logic_tree.html`, and
+the new migration file together. CI reruns the regeneration commands and
+fails if the committed output differs (the "codegen drift check") -- so a
 dictionary edit that wasn't followed by regenerating fails in CI even if
 it's forgotten locally.
 

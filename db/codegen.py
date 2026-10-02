@@ -19,17 +19,21 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from db.naming import derive_column_names  # noqa: E402
+from db.naming import MAX_IDENTIFIER_LENGTH, derive_column_names, slugify  # noqa: E402
 from db.type_mapping import sqla_type_for  # noqa: E402
 from dictionary import (  # noqa: E402
     COMPLETION_SCOPE,
     SAND_BODY_SCOPE,
     WELL_SCOPE,
     ParamRow,
+    build_visibility_rules,
     classify_field,
     load_dictionary,
+    target_rules,
 )
+from dictionary.conditional_fields import expand_conditional_rows  # noqa: E402
 from dictionary.models import FieldSpec  # noqa: E402
+from dictionary.units import choices_for  # noqa: E402
 
 MASTER_XLSX = REPO_ROOT / "MASTER.xlsx"
 GENERATED_DIR = Path(__file__).resolve().parent / "generated"
@@ -52,7 +56,8 @@ def _column_type_name(row: ParamRow, spec: FieldSpec) -> str:
 
 def generate() -> dict[str, list[tuple[str, str, str]]]:
     """Writes db/generated/* and returns {scope_key: [(col_name, type_name, source_parameter), ...]}."""
-    rows = load_dictionary(MASTER_XLSX)
+    rows = expand_conditional_rows(load_dictionary(MASTER_XLSX))
+    visibility = build_visibility_rules(rows)
     registry: dict[str, dict] = {}
     per_table_columns: dict[str, list[tuple[str, str, str]]] = {}
 
@@ -64,7 +69,11 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
         for row in scope_rows:
             spec = classify_field(row)
             col_names = derive_column_names(row.parameter, spec.kind, spec.multi_labels)
-            for name in col_names:
+            unit_choices = choices_for(row)
+            unit_column = f"{slugify(row.parameter)}_unit" if len(unit_choices) > 1 else None
+            if unit_column and len(unit_column) > MAX_IDENTIFIER_LENGTH:
+                raise CodegenError(f"unit column name exceeds Postgres limit: {unit_column}")
+            for name in col_names + ([unit_column] if unit_column else []):
                 if name in seen:
                     raise CodegenError(
                         f"column name collision in table {table_name!r}: {name!r} "
@@ -73,10 +82,13 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
                 seen.add(name)
             type_name = _column_type_name(row, spec)
             columns.extend((name, type_name, row.parameter) for name in col_names)
+            if unit_column:
+                columns.append((unit_column, "Text", f"Unit for {row.parameter}"))
 
             registry_key = f"{scope_key}::{row.category}::{row.subcategory}::{row.parameter}"
-            registry[registry_key] = {
+            entry = {
                 "scope": scope_key,
+                "row_number": row.row_number,
                 "table": table_name,
                 "category": row.category,
                 "subcategory": row.subcategory,
@@ -93,7 +105,20 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
                 "max_length": spec.max_length,
                 "pattern": spec.pattern,
                 "unit": row.unit,
+                "unit_choices": unit_choices,
+                "unit_column": unit_column,
             }
+            if spec.options_by:
+                entry["options_by"] = spec.options_by
+            conditions = {
+                "subcategory_show": target_rules(visibility["subcat_show"], row.category, row.subcategory),
+                "subcategory_hide": target_rules(visibility["subcat_hide"], row.category, row.subcategory),
+                "show": target_rules(visibility["param_show"], row.category, row.parameter),
+                "hide": target_rules(visibility["param_hide"], row.category, row.parameter),
+            }
+            if any(conditions.values()):
+                entry["visibility"] = conditions
+            registry[registry_key] = entry
 
         per_table_columns[scope_key] = columns
         _write_columns_module(module_name, table_name, columns)

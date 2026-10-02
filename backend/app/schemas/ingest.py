@@ -9,13 +9,26 @@ knows what a valid bucket looks like (see schemas/validation.py).
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from backend.app.schemas.validation import validate_bucket
+from dictionary import CURRENT_SCHEMA_VERSION
 
 Bucket = dict[str, dict[str, dict[str, Any]]]
+CommentBucket = dict[str, dict[str, dict[str, str]]]
+
+
+class CompletionIntervalComments(BaseModel):
+    fields: CommentBucket = Field(default_factory=dict)
+    sand_bodies: list[CommentBucket] = Field(default_factory=list)
+
+
+class RecordComments(BaseModel):
+    well: CommentBucket = Field(default_factory=dict)
+    completion_intervals: list[CompletionIntervalComments] = Field(default_factory=list)
+
 
 
 class CompletionIntervalIngest(BaseModel):
@@ -34,14 +47,41 @@ class CompletionIntervalIngest(BaseModel):
 
 
 class RecordIngest(BaseModel):
+    schema_version: int = Field(strict=True)
     generated_at: datetime | None = None
+    record_status: Literal["draft", "complete"] | None = None
     well: Bucket = Field(default_factory=dict)
     completion_intervals: list[CompletionIntervalIngest] = Field(min_length=1)
+    comments: RecordComments | None = None
+
+    @field_validator("schema_version")
+    @classmethod
+    def _supported_schema_version(cls, value: int) -> int:
+        if value != CURRENT_SCHEMA_VERSION:
+            raise ValueError(f"Unsupported schema version {value}; expected {CURRENT_SCHEMA_VERSION}")
+        return value
 
     @field_validator("well")
     @classmethod
     def _validate_well(cls, v: Bucket) -> Bucket:
         return validate_bucket(v, scope="well")
+
+    @model_validator(mode="after")
+    def _validate_comment_layout(self) -> "RecordIngest":
+        # The static form saves incomplete files locally, but this endpoint
+        # creates submitted records. An explicit draft marker is therefore a
+        # useful final guard even when a particular draft happens to contain
+        # enough required values to pass field validation.
+        if self.record_status == "draft":
+            raise ValueError("Draft files cannot be submitted as completed records")
+        if self.comments is None:
+            return self
+        if len(self.comments.completion_intervals) != len(self.completion_intervals):
+            raise ValueError("Comment groups must match completion intervals")
+        for interval, notes in zip(self.completion_intervals, self.comments.completion_intervals):
+            if len(notes.sand_bodies) != len(interval.sand_bodies):
+                raise ValueError("Comment groups must match sand bodies")
+        return self
 
 
 class RecordCreated(BaseModel):

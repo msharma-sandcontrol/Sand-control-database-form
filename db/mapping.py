@@ -38,9 +38,56 @@ for _key, _entry in _REGISTRY.items():
     _BY_SCOPE.setdefault(_scope, {})[_rest] = _entry
 
 
-def _coerce(entry: dict, leaf_key: str, value: Any, errors: list[str]) -> dict[str, Any]:
-    """Coerces one leaf `value` per its registry entry; returns {db_column: value}
-    (a multi_number field can populate more than one column)."""
+def _coerce(entry: dict, leaf_key: str, value: Any, errors: list[str],
+            active_values: dict[str, Any]) -> dict[str, Any]:
+    """Validate an explicit unit, then coerce the associated field value."""
+    choices = entry.get("unit_choices", [])
+    unit = None
+    if isinstance(value, dict):
+        if set(value) != {"value", "unit"}:
+            errors.append(f"{leaf_key}: expected a value and unit object")
+            return {}
+        if not choices:
+            errors.append(f"{leaf_key}: this field has no unit")
+            return {}
+        unit = value.get("unit")
+        value = value["value"]
+    if choices:
+        if unit in (None, ""):
+            unit = choices[0]["unit"]
+        if unit not in [choice["unit"] for choice in choices]:
+            errors.append(f"{leaf_key}: unit {unit!r} is not allowed")
+            return {}
+    elif unit not in (None, ""):
+        errors.append(f"{leaf_key}: this field has no unit")
+        return {}
+    measured_entry = entry
+    if choices and entry["kind"] == "number":
+        # Workbook limits are expressed in its Field unit. Compare a selected
+        # SI value against the same physical limits (notably 0°F = -17.78°C).
+        source = choices[0]
+        target = next(choice for choice in choices if choice["unit"] == unit)
+        measured_entry = dict(entry)
+        for bound in ("min_value", "max_value"):
+            if entry[bound] is None:
+                continue
+            if source["group"] == target["group"]:
+                canonical = float(entry[bound]) * source["scale"] + source["offset"]
+                measured_entry[bound] = (canonical - target["offset"]) / target["scale"]
+            elif float(entry[bound]) == 0:
+                # Zero remains a lower/upper bound in either production basis.
+                measured_entry[bound] = 0
+            else:
+                measured_entry[bound] = None
+    columns = _coerce_value(measured_entry, leaf_key, value, errors, active_values)
+    if entry.get("unit_column") and unit:
+        columns[entry["unit_column"]] = unit
+    return columns
+
+
+def _coerce_value(entry: dict, leaf_key: str, value: Any, errors: list[str],
+                  active_values: dict[str, Any]) -> dict[str, Any]:
+    """Coerce one bare value after its unit has been checked."""
     if value is None or value == "":
         return {}
 
@@ -51,7 +98,10 @@ def _coerce(entry: dict, leaf_key: str, value: Any, errors: list[str]) -> dict[s
     if kind == "select":
         text_value = str(value)
         options = entry["options"]
-        if options and text_value not in options:
+        if entry.get("options_by"):
+            trigger, choices = next(iter(entry["options_by"].items()))
+            options = choices.get(str(active_values.get(trigger, "")), [])
+        if text_value not in options and (options or entry.get("options_by")):
             errors.append(f"{leaf_key}: {value!r} is not one of {options}")
             return {}
         if db_type == "Boolean":
@@ -117,13 +167,64 @@ def _to_number(value: Any, db_type: str) -> int | Decimal | None:
         return None
 
 
+def _matches(rules: list[dict[str, str]], values: dict[str, Any]) -> bool:
+    return any(str(values.get(rule["parameter"], "")) == rule["value"] for rule in rules)
+
+
+def _visible(entry: dict, values: dict[str, Any]) -> bool:
+    """Apply the same OR show/hide rules and parent-section gate as the form."""
+    rules = entry.get("visibility", {})
+    for prefix in ("subcategory_", ""):
+        show = rules.get(prefix + "show", [])
+        hide = rules.get(prefix + "hide", [])
+        if show and not _matches(show, values):
+            return False
+        if hide and _matches(hide, values):
+            return False
+    return True
+
+
+def _applicable(index: dict[str, dict], bucket: dict) -> tuple[dict[str, bool], dict[str, Any]]:
+    """Resolve hidden triggers before deciding which fields are required.
+
+    Form controls disappear and clear when their parent/own rule hides them.
+    The submitted bucket should follow the same behavior even if a caller
+    constructs JSON by hand. Current workbook triggers have unique names in
+    each scope, matching findParamField() in the browser.
+    """
+    entries = sorted(index.items(), key=lambda pair: pair[1]["row_number"])
+    provided = {
+        f"{category}::{subcategory}::{parameter}": value
+        for category, subcats in (bucket or {}).items()
+        for subcategory, params in (subcats or {}).items()
+        for parameter, value in (params or {}).items()
+    }
+    active_values = {}
+    for key, entry in entries:
+        value = provided.get(key)
+        bare = value.get("value") if isinstance(value, dict) else value
+        if bare is not None and bare != "":
+            active_values.setdefault(entry["parameter"], bare)
+    for _ in range(len(entries) + 1):
+        changed = False
+        for key, entry in entries:
+            if not _visible(entry, active_values) and entry["parameter"] in active_values:
+                del active_values[entry["parameter"]]
+                changed = True
+        if not changed:
+            break
+    return {key: _visible(entry, active_values) for key, entry in entries}, active_values
+
+
 def flatten_bucket(bucket: dict[str, dict[str, dict[str, Any]]], scope: str) -> dict[str, Any]:
-    """Category -> Subcategory -> Parameter -> value, validated against the
-    dictionary-derived registry for `scope`, flattened into {db_column: value}.
-    Raises MappingError (with every problem found, not just the first) if any
-    parameter is unrecognized or any value fails validation.
+    """Validate fields against the workbook registry and flatten DB values.
+
+    A required field only applies when the form would show it. Values sent
+    for hidden questions are rejected so hand-built API records cannot carry
+    answers that a browser export would have cleared and omitted.
     """
     index = _BY_SCOPE.get(scope, {})
+    visible, active_values = _applicable(index, bucket)
     flat: dict[str, Any] = {}
     errors: list[str] = []
     provided_keys: set[str] = set()
@@ -137,13 +238,24 @@ def flatten_bucket(bucket: dict[str, dict[str, dict[str, Any]]], scope: str) -> 
                 if entry is None:
                     errors.append(f"{leaf_key}: not a recognized field for this record level")
                     continue
-                coerced = _coerce(entry, leaf_key, value, errors)
-                if coerced:
+                if not visible[key]:
+                    # Unit choices for empty hidden controls are part of a
+                    # restorable draft, but hidden answers remain forbidden.
+                    bare = value.get("value") if isinstance(value, dict) else value
+                    if bare in (None, ""):
+                        # Blank hidden fields have no answer, but the selected
+                        # unit is still part of the draft state.
+                        flat.update(_coerce(entry, leaf_key, value, errors, active_values))
+                        continue
+                    errors.append(f"{leaf_key}: hidden by the current form answers")
+                    continue
+                coerced = _coerce(entry, leaf_key, value, errors, active_values)
+                if any(column in coerced for column in entry["db_columns"]):
                     provided_keys.add(key)
                 flat.update(coerced)
 
     for key, entry in index.items():
-        if entry.get("required") and key not in provided_keys:
+        if visible[key] and entry.get("required") and key not in provided_keys:
             errors.append(
                 f"{entry['category']} / {entry['subcategory']} / {entry['parameter']}: this field is required"
             )
@@ -171,8 +283,17 @@ def build_record_out(row_values: dict[str, Any], scope: str) -> dict[str, dict[s
         else:
             raw = row_values.get(columns[0])
             if raw is None:
-                continue
-            value = _serialize(raw)
+                unit_column = entry.get("unit_column")
+                if not unit_column or row_values.get(unit_column) is None:
+                    continue
+                value = None
+            else:
+                value = _serialize(raw)
+        choices = entry.get("unit_choices", [])
+        if choices:
+            unit_column = entry.get("unit_column")
+            unit = row_values.get(unit_column) if unit_column else choices[0]["unit"]
+            value = {"value": value, "unit": unit or choices[0]["unit"]}
         cat_bucket = out.setdefault(entry["category"], {})
         subcat_bucket = cat_bucket.setdefault(entry["subcategory"], {})
         subcat_bucket[entry["parameter"]] = value
@@ -183,7 +304,10 @@ def _serialize(value: Any) -> Any:
     if isinstance(value, bool):
         return "Yes" if value else "No"
     if isinstance(value, Decimal):
-        return float(value)
+        # The form exports numeric values as strings. Keep that representation
+        # on API readback so JSON serialization does not pass an exact database
+        # Decimal through a binary float and change its digits.
+        return str(value)
     if isinstance(value, (date, datetime)):
         return value.isoformat()
     return value

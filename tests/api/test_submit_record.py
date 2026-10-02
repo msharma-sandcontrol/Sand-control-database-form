@@ -16,6 +16,9 @@ def test_submit_happy_path_creates_rows_in_all_three_tables(client, seeded_org, 
     org, token = seeded_org
     payload = make_payload()
     payload["well"]["Well Specific"]["Well & Field Identification"]["Well name (anonymized)"] = "TESTWELL1"
+    payload["completion_intervals"][0]["fields"] = {
+        "Completion": {"Liners and Screens": {"Screen Size Selection Method": "Rule of thumb"}}
+    }
     resp = client.post("/records", json=payload, headers=_auth(token))
     assert resp.status_code == 201, resp.text
     record_id = resp.json()["id"]
@@ -26,8 +29,20 @@ def test_submit_happy_path_creates_rows_in_all_three_tables(client, seeded_org, 
     assert well is not None
     assert well.organization_id == org.id
     assert well.well_name_anonymized == "TESTWELL1"
+    assert well.schema_version == payload["schema_version"]
+    assert well.severity_of_sand_production is None
     assert len(well.completion_intervals) == 1
+    assert well.completion_intervals[0].screen_size_selection_method == "Rule of thumb"
     assert len(well.completion_intervals[0].sand_bodies) == 1
+
+
+def test_submit_explicit_draft_returns_422(client, seeded_org, make_payload):
+    _, token = seeded_org
+    payload = make_payload()
+    payload["record_status"] = "draft"
+    resp = client.post("/records", json=payload, headers=_auth(token))
+    assert resp.status_code == 422
+    assert "Draft files cannot be submitted" in resp.text
 
 
 def test_submit_missing_required_field_returns_422(client, seeded_org, make_payload):
@@ -66,7 +81,9 @@ def test_submit_out_of_range_number_returns_422(client, seeded_org, make_payload
 def test_submit_multi_number_splits_into_columns(client, seeded_org, db_session, make_payload):
     _, token = seeded_org
     payload = make_payload()
-    payload["completion_intervals"][0]["fields"].setdefault("Completion", {})["OH Drilling Details"] = {
+    completion = payload["completion_intervals"][0]["fields"].setdefault("Completion", {})
+    completion["Completion Details"] = {"Completion Type": "Open Hole"}
+    completion["OH Drilling Details"] = {
         "Mud PSD D10/D25/D40/D50/D75/D90": [10, 25, 40, 50, 75, 90]
     }
     resp = client.post("/records", json=payload, headers=_auth(token))
@@ -86,8 +103,7 @@ def test_submit_multi_number_splits_into_columns(client, seeded_org, db_session,
 
 def test_submit_yes_no_normalizes_to_boolean(client, seeded_org, db_session, make_payload):
     _, token = seeded_org
-    payload = make_payload()
-    payload["well"]["Well Specific"]["Failure Confirmation"] = {"Sand failure": "Yes"}
+    payload = make_payload(sand_failure="Yes")
     resp = client.post("/records", json=payload, headers=_auth(token))
     assert resp.status_code == 201, resp.text
 
@@ -95,6 +111,7 @@ def test_submit_yes_no_normalizes_to_boolean(client, seeded_org, db_session, mak
 
     well = db_session.get(Well, resp.json()["id"])
     assert well.sand_failure is True
+    assert well.severity_of_sand_production is not None
 
 
 def test_submit_requires_at_least_one_completion_interval(client, seeded_org, make_payload):
