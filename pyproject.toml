@@ -32,6 +32,11 @@ exclude = ["tests*", "db.migrations*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# tests/dictionary and tests/db have no __init__.py, so pytest's default import
+# mode can resolve `dictionary`/`db` to those test folders as empty namespace
+# packages. With the repo root on sys.path, the real packages always win,
+# whether tests start with `pytest` (as in CI) or `python -m pytest`.
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 120
