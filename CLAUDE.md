@@ -35,6 +35,11 @@ architecture" below).
   form visibility model; `docs/form_logic_tree.html` is the generated output.
   The explorer shows the current visibility rules and which required questions
   apply to the selected answers.
+- `docs/index.html` -- the hosted copy of `form/sand_control_form.html`. The Azure
+  Static Web Apps workflow publishes `docs/` on every push to `main`, behind the
+  sign-in rule in `docs/staticwebapp.config.json`. It is a plain copy, not covered
+  by the codegen drift check: after regenerating the form, copy it here to update
+  the live site.
 - `docs/unit_conversion_review.md` -- every Field/SI unit, conversion factor, and
   the liquid/gas basis rules (unit logic lives in `dictionary/units.py`).
 - `docs/devlog/` -- per-branch development logs explaining what changed, why, and
