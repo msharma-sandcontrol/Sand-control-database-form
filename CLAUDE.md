@@ -406,9 +406,9 @@ See the README for the full local-dev and Docker workflows.
 
 ## Known open items / suggested improvements
 
-- **`Chemical Sand Consolidation`**: present as a Subcategory under `Sand Control` in
-  the old long-format Data Dictionary (resin/chemical consolidation treatments), absent
-  from the current `MasterView`. Confirm whether that was intentional.
+- **`Chemical Sand Consolidation`** (closed, intentional): removed during the SME
+  redesign ("eliminate chemical consolidation"). Comparison with the old version is
+  in `docs/chemical_sand_consolidation.md`; do not re-add without SME sign-off.
 - **`Mud PSD` lost its D10/D50/D90 sub-labels**: its `Unit` cell is now blank (it used to
   be the slash-delimited `D10 / D50 / D90` that drove sub-field labels) and its
   Parameter name has no trailing slash-delimited suffix either, so its 3 sub-values now
