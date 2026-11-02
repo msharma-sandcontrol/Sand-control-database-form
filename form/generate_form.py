@@ -75,7 +75,8 @@ DEFAULT_MAX_SAND_BODY = 10
 # by the browser on every load. Not tamper-proof, but sufficient for the actual
 # threat model (a partner company holding onto an old file), and needs no new
 # infrastructure. Bump this (or pass --expires-on) each time the form is reissued.
-DEFAULT_EXPIRES_ON = "2026-11-01"
+# Expiration disabled by default. Previous cutoff: "2026-11-01".
+DEFAULT_EXPIRES_ON = ""
 
 WELL_ZONE_CLASS = {
     "General Information": "zone-general",

@@ -124,7 +124,7 @@ input.mn-input { padding: .35rem .25rem; text-align: center; }
     <small>Well type (or a Sand Body's Fluid Type) sets whether sand rates and PI are liquid- or gas-based; changing it clears numbers entered in the other basis. Standard gas volumes use 60°F and 14.73 psia on both sides.</small>
   </div>
   <p id="basis-change-status" role="status" aria-live="polite"></p>
-  <p class="validity-notice">This form accepts submissions through November 1, 2026.</p>
+  <!-- Expiration disabled; no submission deadline. -->
   <p id="expired-banner" class="expired-banner" style="display:none;">
     This form has expired and is no longer accepting submissions. Please contact your Sand Control Failure DB
     program contact for a current version of the form.
@@ -165,7 +165,8 @@ input.mn-input { padding: .35rem .25rem; text-align: center; }
   const SCHEMA_VERSION = 0;
   const MAX_COMPLETION = 10;
   const MAX_SAND_BODY = 10;
-  const EXPIRES_ON = "2026-11-01";
+  // Expiration disabled. Previous cutoff: "2026-11-01".
+  const EXPIRES_ON = null;
   const EXPORT_NAME_PARAMS = ["Well name (anonymized)", "Well identification number (anonymized)"];
   const CHOICE_DISPLAY = {"Shelf Offshore (< 3,000 ft)": "Shelf Offshore (< 3,000 ft / 914.4 m)", "Deepwater Offshore (3,000 - 6,000 ft)": "Deepwater Offshore (3,000–6,000 ft / 914.4–1,828.8 m)", "Ultra-Deepwater Offshore (> 6,000 ft)": "Ultra-Deepwater Offshore (> 6,000 ft / 1,828.8 m)", "Minor (<0.2 lb/1000 bbl)": "Minor (<0.2 lb/1000 bbl / 0.571 mg/L liquid)", "Moderate (0.2 to 2 lb/1000 bbl)": "Moderate (0.2–2 lb/1000 bbl / 0.571–5.706 mg/L liquid)", "Severe (2 to 10 lb/1000 bbl)": "Severe (2–10 lb/1000 bbl / 5.706–28.530 mg/L liquid)", "Catastrophic (>10 lb/1000 bbl)": "Catastrophic (>10 lb/1000 bbl / 28.530 mg/L liquid)", "Minor (<0.01 lb/MMSCF)": "Minor (<0.01 lb/MMSCF / 0.160 mg/Sm³ gas)", "Moderate (0.01 to 0.05 lb/MMSCF)": "Moderate (0.01–0.05 lb/MMSCF / 0.160–0.801 mg/Sm³ gas)", "Severe (0.05 to 0.2 lb/MMSCF)": "Severe (0.05–0.2 lb/MMSCF / 0.801–3.204 mg/Sm³ gas)", "Catastrophic (>0.2 lb/MMscf)": "Catastrophic (>0.2 lb/MMSCF / 3.204 mg/Sm³ gas)", "Gradual (≤ 0.01 in/hr average increase in choke diameter)": "Gradual (≤ 0.01 in/hr / 0.0254 cm/hr average choke increase)", "Aggressive (> 0.01 in/hr, or a single increase ≥ 0.05 in within 1 hr)": "Aggressive (> 0.01 in/hr / 0.0254 cm/hr, or ≥ 0.05 in / 0.127 cm within 1 hr)"};
   const OIL_FVF = "Oil Formation Volume Factor (Bo) at downhole conditions";

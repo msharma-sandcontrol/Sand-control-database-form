@@ -138,13 +138,11 @@ fails if the committed output differs (the "codegen drift check") -- so a
 dictionary edit that wasn't followed by regenerating fails in CI even if
 it's forgotten locally.
 
-The generated form self-locks after a baked-in expiration date (client-side
-check, since the form has no backend to call) -- currently `2026-11-01`
-(`DEFAULT_EXPIRES_ON` in `form/generate_form.py`). To reissue the form with a
-later cutoff, regenerate with `--expires-on YYYY-MM-DD` (or update the
-`DEFAULT_EXPIRES_ON` constant and commit the regenerated
-`sand_control_form.html`); pass `--expires-on ""` for a build with no
-expiration.
+Expiration is disabled by default (`DEFAULT_EXPIRES_ON = ""` in
+`form/generate_form.py`), including in the Cloudflare entry point,
+`docs/index.html`. To enable a cutoff, regenerate with
+`--expires-on YYYY-MM-DD`; pass `--expires-on ""` for no expiration.
+When enabled, the check runs client-side and locks the form after that date.
 
 Note: Alembic's `--autogenerate` cannot detect a column *rename* -- it will
 show it as a drop + an add. If a dictionary edit is truly a rename, hand-edit
