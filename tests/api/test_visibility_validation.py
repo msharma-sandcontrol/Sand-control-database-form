@@ -16,7 +16,7 @@ PERFORMANCE = "Sand Production & Well Performance"
 
 
 def _well(payload: dict, section: str) -> dict:
-    return payload["well"]["Well Specific"][section]
+    return payload["well"]["Well Specific Information"][section]
 
 
 def test_severity_is_required_only_after_confirmed_failure(make_payload):
@@ -132,7 +132,7 @@ def test_sand_body_pi_basis_matches_form(make_payload, well_type, fluid_type, un
         RESERVOIR[0], {}).setdefault(RESERVOIR[1], {})
     if fluid_type:
         group["Fluid Type"] = fluid_type
-    group["Initial PI"] = {"value": "3", "unit": unit}
+    group["Initial PI of the sand body"] = {"value": "3", "unit": unit}
     if accepted:
         assert RecordIngest.model_validate(payload)
         return

@@ -9,10 +9,11 @@ def _auth(token: str) -> dict:
 def test_fetch_round_trips_submitted_data(client, seeded_org, make_payload):
     _, token = seeded_org
     payload = make_payload(sand_failure="Yes")
-    payload["well"]["Well Specific"]["Well & Field Identification"]["Well name (anonymized)"] = "FETCHTEST"
+    payload["well"]["Well Specific Information"]["Well & Field Identification"]["Well name (anonymized)"] = "FETCHTEST"
     payload["record_status"] = "complete"
     payload["comments"] = {
-        "well": {"Well Specific": {"Well & Field Identification": {"Well name (anonymized)": "Private label"}}},
+        "well": {"Well Specific Information": {
+            "Well & Field Identification": {"Well name (anonymized)": "Private label"}}},
         "completion_intervals": [{
             "fields": {"Wellbore": {"Wellbore properties": {"Well Deviation": "Estimated"}}},
             "sand_bodies": [{
@@ -30,11 +31,11 @@ def test_fetch_round_trips_submitted_data(client, seeded_org, make_payload):
     assert fetch_resp.status_code == 200
     body = fetch_resp.json()
     assert body["schema_version"] == payload["schema_version"]
-    assert (body["well"]["Well Specific"]["Sand Production & Well Performance"]
+    assert (body["well"]["Well Specific Information"]["Sand Production & Well Performance"]
             ["Severity of sand production"] ==
-            payload["well"]["Well Specific"]["Sand Production & Well Performance"]
+            payload["well"]["Well Specific Information"]["Sand Production & Well Performance"]
             ["Severity of sand production"])
-    ident = body["well"]["Well Specific"]["Well & Field Identification"]
+    ident = body["well"]["Well Specific Information"]["Well & Field Identification"]
     assert ident["Well name (anonymized)"] == "FETCHTEST"
     assert len(body["completion_intervals"]) == 1
     assert len(body["completion_intervals"][0]["sand_bodies"]) == 1

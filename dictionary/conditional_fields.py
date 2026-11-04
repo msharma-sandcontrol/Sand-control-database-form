@@ -1,6 +1,6 @@
 """Expand one workbook row into its conditional oil/gas FVF alternatives.
 
-The workbook's row 145 retains its original Oil Bo definition. Fluid Type's
+The workbook's row 144 retains its original Oil Bo definition. Fluid Type's
 Affected Parameter rule names a Gas Bg alternative at the same displayed row
 position. Expanding it here gives the form, logic explorer, and API registry
 identical field keys and visibility rules without renumbering later rows.
@@ -21,7 +21,7 @@ GAS_FVF_TOOLTIP = (
 
 
 def expand_conditional_rows(rows: list[ParamRow]) -> list[ParamRow]:
-    """Return workbook rows with Gas Bg immediately after Oil Bo, both row 145."""
+    """Return workbook rows with Gas Bg immediately after Oil Bo, both row 144."""
     expanded = []
     found = False
     for row in rows:

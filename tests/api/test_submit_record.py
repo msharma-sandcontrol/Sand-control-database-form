@@ -15,7 +15,7 @@ def _auth(token: str) -> dict:
 def test_submit_happy_path_creates_rows_in_all_three_tables(client, seeded_org, db_session, make_payload):
     org, token = seeded_org
     payload = make_payload()
-    payload["well"]["Well Specific"]["Well & Field Identification"]["Well name (anonymized)"] = "TESTWELL1"
+    payload["well"]["Well Specific Information"]["Well & Field Identification"]["Well name (anonymized)"] = "TESTWELL1"
     payload["completion_intervals"][0]["fields"] = {
         "Completion": {"Liners and Screens": {"Screen Size Selection Method": "Rule of thumb"}}
     }
@@ -48,7 +48,7 @@ def test_submit_explicit_draft_returns_422(client, seeded_org, make_payload):
 def test_submit_missing_required_field_returns_422(client, seeded_org, make_payload):
     _, token = seeded_org
     payload = make_payload()
-    del payload["well"]["Well Specific"]["Well & Field Identification"]["Well name (anonymized)"]
+    del payload["well"]["Well Specific Information"]["Well & Field Identification"]["Well name (anonymized)"]
     resp = client.post("/records", json=payload, headers=_auth(token))
     assert resp.status_code == 422
     assert "required" in resp.text.lower()
@@ -57,7 +57,7 @@ def test_submit_missing_required_field_returns_422(client, seeded_org, make_payl
 def test_submit_unknown_parameter_returns_422(client, seeded_org, make_payload):
     _, token = seeded_org
     payload = make_payload()
-    payload["well"]["Well Specific"]["Well & Field Identification"]["Not A Real Field"] = "x"
+    payload["well"]["Well Specific Information"]["Well & Field Identification"]["Not A Real Field"] = "x"
     resp = client.post("/records", json=payload, headers=_auth(token))
     assert resp.status_code == 422
 
@@ -65,7 +65,7 @@ def test_submit_unknown_parameter_returns_422(client, seeded_org, make_payload):
 def test_submit_invalid_dropdown_value_returns_422(client, seeded_org, make_payload):
     _, token = seeded_org
     payload = make_payload()
-    payload["well"]["Well Specific"]["Well & Field Identification"]["Operating environment"] = "Mars"
+    payload["well"]["Well Specific Information"]["Well & Field Identification"]["Operating environment"] = "Mars"
     resp = client.post("/records", json=payload, headers=_auth(token))
     assert resp.status_code == 422
 
@@ -110,7 +110,7 @@ def test_submit_yes_no_normalizes_to_boolean(client, seeded_org, db_session, mak
     from db.models import Well
 
     well = db_session.get(Well, resp.json()["id"])
-    assert well.sand_failure is True
+    assert well.sand_control_failure is True
     assert well.severity_of_sand_production is not None
 
 

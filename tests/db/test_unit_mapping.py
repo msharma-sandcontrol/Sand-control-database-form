@@ -10,21 +10,21 @@ from db.mapping import MappingError, build_record_out, flatten_bucket
 
 def test_blank_unit_is_stored_and_reconstructed(make_payload):
     well = make_payload()["well"]
-    well["Well Specific"]["Sand Production & Well Performance"]["Initial PI"] = {
+    well["Well Specific Information"]["Sand Production & Well Performance"]["Initial PI"] = {
         "value": None, "unit": "Sm³ liquid/d/kPa",
     }
     flat = flatten_bucket(well, "well")
     assert flat["initial_pi_unit"] == "Sm³ liquid/d/kPa"
     assert "initial_pi" not in flat
     rebuilt = build_record_out(flat, "well")
-    assert rebuilt["Well Specific"]["Sand Production & Well Performance"]["Initial PI"] == {
+    assert rebuilt["Well Specific Information"]["Sand Production & Well Performance"]["Initial PI"] == {
         "value": None, "unit": "Sm³ liquid/d/kPa",
     }
 
 
 def test_hidden_blank_keeps_unit_but_hidden_answer_is_rejected(make_payload):
     well = make_payload(sand_failure="No", well_type="Gas Producer")["well"]
-    group = well["Well Specific"]["Sand Production & Well Performance"]
+    group = well["Well Specific Information"]["Sand Production & Well Performance"]
     group["Sand production rate at first choke back"] = {"value": None, "unit": "mg/Sm³ gas"}
     flat = flatten_bucket(well, "well")
     assert flat["sand_production_rate_at_first_choke_back_unit"] == "mg/Sm³ gas"
@@ -49,7 +49,7 @@ def test_temperature_limits_follow_selected_celsius_unit(make_payload):
 
 def test_invalid_unit_is_rejected(make_payload):
     well = make_payload()["well"]
-    well["Well Specific"]["Well & Field Identification"]["Well TD, MD"] = {
+    well["Well Specific Information"]["Well & Field Identification"]["Well TD, MD"] = {
         "value": "100", "unit": "furlongs",
     }
     with pytest.raises(MappingError, match="not allowed"):
@@ -58,7 +58,7 @@ def test_invalid_unit_is_rejected(make_payload):
 
 def test_gas_basis_keeps_zero_minimum(make_payload):
     well = make_payload(sand_failure="Yes", well_type="Gas Producer")["well"]
-    group = well["Well Specific"]["Sand Production & Well Performance"]
+    group = well["Well Specific Information"]["Sand Production & Well Performance"]
     group["Sand rate quantification"] = "Measurable"
     group["Sand production rate at first choke back"] = {
         "value": "-1", "unit": "lb/MMSCF",
@@ -73,7 +73,7 @@ def test_gas_basis_keeps_zero_minimum(make_payload):
 ])
 def test_well_type_sets_liquid_or_gas_units(make_payload, well_type, allowed, rejected):
     well = make_payload(well_type=well_type)["well"]
-    group = well["Well Specific"]["Sand Production & Well Performance"]
+    group = well["Well Specific Information"]["Sand Production & Well Performance"]
     group["Initial PI"] = {"value": "2", "unit": allowed}
     assert flatten_bucket(well, "well")["initial_pi_unit"] == allowed
     group["Initial PI"]["unit"] = rejected
@@ -86,9 +86,9 @@ def test_sand_body_pi_follows_its_own_fluid_type(make_payload):
     group = sand.setdefault("Reservoir Characterization", {}).setdefault(
         "Reservoir Rock and Fluid Properties", {}
     )
-    group["Initial PI"] = {"value": "3", "unit": "MMSCF/d/psi"}
+    group["Initial PI of the sand body"] = {"value": "3", "unit": "MMSCF/d/psi"}
     # With no Fluid Type or parent Well type, only the saved unit states the basis.
-    assert flatten_bucket(sand, "sand_body")["initial_pi_unit"] == "MMSCF/d/psi"
+    assert flatten_bucket(sand, "sand_body")["initial_pi_of_the_sand_body_unit"] == "MMSCF/d/psi"
     # A blank Fluid Type inherits the parent well's Well type, as in the form.
     with pytest.raises(MappingError, match=r"Well type = 'Oil Producer' \(Fluid Type is blank\)"):
         flatten_bucket(sand, "sand_body", inherited={"Well type": "Oil Producer"})
@@ -96,7 +96,7 @@ def test_sand_body_pi_follows_its_own_fluid_type(make_payload):
     group["Fluid Type"] = "Wet Gas"
     # The Sand Body's own answer outranks the parent's.
     assert flatten_bucket(sand, "sand_body", inherited={"Well type": "Oil Producer"})
-    assert flatten_bucket(sand, "sand_body")["initial_pi_unit"] == "MMSCF/d/psi"
+    assert flatten_bucket(sand, "sand_body")["initial_pi_of_the_sand_body_unit"] == "MMSCF/d/psi"
     group["Fluid Type"] = "Oil"
     with pytest.raises(MappingError, match="does not match Fluid Type"):
         flatten_bucket(sand, "sand_body")
@@ -160,6 +160,6 @@ def test_numeric_api_readback_keeps_decimal_digits():
         "well_td_md": Decimal("123456789.123456789"),
         "well_td_md_unit": "ft",
     }, "well")
-    assert rebuilt["Well Specific"]["Well & Field Identification"]["Well TD, MD"] == {
+    assert rebuilt["Well Specific Information"]["Well & Field Identification"]["Well TD, MD"] == {
         "value": "123456789.123456789", "unit": "ft",
     }

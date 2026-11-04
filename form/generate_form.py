@@ -70,16 +70,16 @@ DEFAULT_INPUT = REPO_ROOT / "MASTER.xlsx"
 DEFAULT_OUTPUT = Path(__file__).resolve().parent / "sand_control_form.html"
 DEFAULT_MAX_COMPLETION = 10
 DEFAULT_MAX_SAND_BODY = 10
-# Form is emailed out as a standalone file with no backend to check against, so
-# expiration is enforced client-side: baked in at generation time and re-checked
-# by the browser on every load. Not tamper-proof, but sufficient for the actual
-# threat model (a partner company holding onto an old file), and needs no new
-# infrastructure. Bump this (or pass --expires-on) each time the form is reissued.
-DEFAULT_EXPIRES_ON = "2026-11-01"
+# Optional expiration for a form emailed out as a standalone file. When set
+# (here or with --expires-on YYYY-MM-DD), the date is baked in at generation
+# time and checked by the browser on every load, which then locks the form.
+# Not tamper-proof, but enough to retire an old copy without a backend.
+# Empty means the form never expires (the current default).
+DEFAULT_EXPIRES_ON = ""
 
 WELL_ZONE_CLASS = {
     "General Information": "zone-general",
-    "Well Specific": "zone-well",
+    "Well Specific Information": "zone-well",
 }
 
 # These two counter Parameters get an "Apply" button next to their input so
@@ -1127,6 +1127,13 @@ JS = """
     return value !== null && typeof value === 'object' && !Array.isArray(value);
   }
 
+  // Same rule as the API: a real calendar date written YYYY-MM-DD.
+  function isIsoDate(value) {
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;
+    const parsed = new Date(value + 'T00:00:00Z');
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  }
+
   function validateBucket(bucket, root, commentsOnly, wellType) {
     if (!isObject(bucket)) throw new Error('A field group is not an object.');
     for (const [category, subcategories] of Object.entries(bucket)) {
@@ -1165,6 +1172,14 @@ JS = """
             }
           } else if (typeof bare !== 'string' && typeof bare !== 'number') {
             throw new Error('Invalid field value: ' + parameter);
+          } else if (control.dataset.kind === 'date' && !isIsoDate(String(bare))) {
+            // A date input silently discards any other text, so an import
+            // would "succeed" with the date missing. Excel rewrites CSV dates
+            // in the viewer's locale (1/10/2024 or 10/1/2024) when it re-saves
+            // a file; refuse rather than guess month vs day order.
+            throw new Error('Invalid date for ' + parameter + ': "' + bare +
+              '". Dates must be YYYY-MM-DD. If the CSV was opened and saved in Excel, ' +
+              're-enter the date in that format or use the original file.');
           } else if (control.tagName === 'SELECT') {
             let options = Array.from(control.options).map((option) => option.value);
             if (control.dataset.optionsBy) {

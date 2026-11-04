@@ -294,7 +294,7 @@ button { cursor: pointer; }
         const categoryFields = category.subcategories.flatMap(section => section.fields);
         const categoryBranch = addBranch(scopeBranch, category.name, categoryKey,
           countVisible(categoryFields, scopeKey),
-          filtering || (prior.get(categoryKey) ?? category.name === 'Well Specific'));
+          filtering || (prior.get(categoryKey) ?? category.name === 'Well Specific Information'));
         for (const sectionEntry of entry.sections) {
           const section = sectionEntry.section;
           const sectionKey = categoryKey + '/' + section.name;

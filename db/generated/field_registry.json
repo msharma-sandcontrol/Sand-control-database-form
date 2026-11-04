@@ -14,7 +14,7 @@
     "parameter": "Casing Size",
     "pattern": null,
     "required": false,
-    "row_number": 77,
+    "row_number": 76,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Cased Hole Details",
@@ -67,7 +67,7 @@
     "parameter": "Charge Type",
     "pattern": null,
     "required": false,
-    "row_number": 83,
+    "row_number": 82,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Cased Hole Details",
@@ -102,7 +102,7 @@
     "parameter": "Gross Perf Length",
     "pattern": null,
     "required": false,
-    "row_number": 78,
+    "row_number": 77,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Cased Hole Details",
@@ -152,7 +152,7 @@
     "parameter": "Net Perf Length",
     "pattern": null,
     "required": false,
-    "row_number": 79,
+    "row_number": 78,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Cased Hole Details",
@@ -202,7 +202,7 @@
     "parameter": "OB / OB Magnitude",
     "pattern": null,
     "required": false,
-    "row_number": 85,
+    "row_number": 84,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Cased Hole Details",
@@ -256,7 +256,7 @@
     "parameter": "Perforation Charge Casing Material",
     "pattern": null,
     "required": false,
-    "row_number": 82,
+    "row_number": 81,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Cased Hole Details",
@@ -291,7 +291,7 @@
     "parameter": "Perforation Gun Size",
     "pattern": null,
     "required": false,
-    "row_number": 80,
+    "row_number": 79,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Cased Hole Details",
@@ -341,7 +341,7 @@
     "parameter": "Perforation SPF",
     "pattern": null,
     "required": false,
-    "row_number": 81,
+    "row_number": 80,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Cased Hole Details",
@@ -396,7 +396,7 @@
     "parameter": "Perforation Strategy",
     "pattern": null,
     "required": false,
-    "row_number": 84,
+    "row_number": 83,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Cased Hole Details",
@@ -434,7 +434,7 @@
     "parameter": "Completion Type",
     "pattern": null,
     "required": false,
-    "row_number": 60,
+    "row_number": 59,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Completion Details",
@@ -458,7 +458,7 @@
     "parameter": "Sandface Completion Date",
     "pattern": null,
     "required": false,
-    "row_number": 61,
+    "row_number": 60,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Completion Details",
@@ -482,7 +482,7 @@
     "parameter": "% Pack through Shunts",
     "pattern": null,
     "required": false,
-    "row_number": 102,
+    "row_number": 101,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -547,7 +547,7 @@
     "parameter": "Carrier Fluid Density",
     "pattern": null,
     "required": false,
-    "row_number": 110,
+    "row_number": 109,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -613,7 +613,7 @@
     "parameter": "Carrier Fluid Type - CHFP",
     "pattern": null,
     "required": false,
-    "row_number": 108,
+    "row_number": 107,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -676,7 +676,7 @@
     "parameter": "Carrier Fluid Type - CHGP",
     "pattern": null,
     "required": false,
-    "row_number": 109,
+    "row_number": 108,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -738,7 +738,7 @@
     "parameter": "Carrier Fluid Type - OHGP",
     "pattern": null,
     "required": false,
-    "row_number": 107,
+    "row_number": 106,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -797,7 +797,7 @@
     "parameter": "Full Pack from Log",
     "pattern": null,
     "required": false,
-    "row_number": 116,
+    "row_number": 115,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -853,7 +853,7 @@
     "parameter": "Max Proppant Concentration",
     "pattern": null,
     "required": false,
-    "row_number": 112,
+    "row_number": 111,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -915,7 +915,7 @@
     "parameter": "Max Pump Rate",
     "pattern": null,
     "required": false,
-    "row_number": 113,
+    "row_number": 112,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -977,7 +977,7 @@
     "parameter": "Net Pressure Gain",
     "pattern": null,
     "required": false,
-    "row_number": 114,
+    "row_number": 113,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1044,7 +1044,7 @@
     "parameter": "Pack Efficiency Percentage",
     "pattern": null,
     "required": false,
-    "row_number": 118,
+    "row_number": 117,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1126,7 +1126,7 @@
     "parameter": "Pack Efficiency Source",
     "pattern": null,
     "required": false,
-    "row_number": 117,
+    "row_number": 116,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1190,7 +1190,7 @@
     "parameter": "Perf Packing",
     "pattern": null,
     "required": false,
-    "row_number": 111,
+    "row_number": 110,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1264,7 +1264,7 @@
     "parameter": "Placement Issues",
     "pattern": null,
     "required": false,
-    "row_number": 119,
+    "row_number": 118,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1314,7 +1314,7 @@
     "parameter": "Placement Method",
     "pattern": null,
     "required": false,
-    "row_number": 101,
+    "row_number": 100,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1370,7 +1370,7 @@
     "parameter": "Proppant / Unit Length",
     "pattern": null,
     "required": false,
-    "row_number": 106,
+    "row_number": 105,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1448,7 +1448,7 @@
     "parameter": "Proppant Size",
     "pattern": null,
     "required": false,
-    "row_number": 105,
+    "row_number": 104,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1498,7 +1498,7 @@
     "parameter": "Proppant Type",
     "pattern": null,
     "required": false,
-    "row_number": 104,
+    "row_number": 103,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1545,7 +1545,7 @@
     "parameter": "Return Percentage",
     "pattern": null,
     "required": false,
-    "row_number": 115,
+    "row_number": 114,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1620,7 +1620,7 @@
     "parameter": "Shunt Tubes",
     "pattern": null,
     "required": false,
-    "row_number": 103,
+    "row_number": 102,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Gravel Packing",
@@ -1680,7 +1680,7 @@
     "parameter": "Blank pipe run across non-pay sections instead of screens?",
     "pattern": null,
     "required": false,
-    "row_number": 99,
+    "row_number": 98,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -1731,7 +1731,7 @@
     "parameter": "Did screens get to Target Setting Depth",
     "pattern": null,
     "required": false,
-    "row_number": 98,
+    "row_number": 97,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -1787,7 +1787,7 @@
     "parameter": "Filter Media Size",
     "pattern": null,
     "required": false,
-    "row_number": 92,
+    "row_number": 91,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -1840,7 +1840,7 @@
     "parameter": "Fluid Type Left in OH at end of Completion",
     "pattern": null,
     "required": false,
-    "row_number": 94,
+    "row_number": 93,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -1891,7 +1891,7 @@
     "parameter": "ICD / AICD",
     "pattern": null,
     "required": false,
-    "row_number": 90,
+    "row_number": 89,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -1950,7 +1950,7 @@
     "parameter": "If screens ran in mud, was mud removed once screens on bottom?",
     "pattern": null,
     "required": false,
-    "row_number": 97,
+    "row_number": 96,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -2006,7 +2006,7 @@
     "parameter": "Screen Base Pipe Size",
     "pattern": null,
     "required": false,
-    "row_number": 93,
+    "row_number": 92,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -2060,7 +2060,7 @@
     "parameter": "Screen Gauge",
     "pattern": null,
     "required": false,
-    "row_number": 91,
+    "row_number": 90,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -2120,7 +2120,7 @@
     "parameter": "Screen RIH Fluid Type in Casing",
     "pattern": null,
     "required": false,
-    "row_number": 95,
+    "row_number": 94,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -2165,7 +2165,7 @@
     "parameter": "Screen RIH Fluid Type in Open-Hole",
     "pattern": null,
     "required": false,
-    "row_number": 96,
+    "row_number": 95,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -2213,7 +2213,7 @@
     "parameter": "Screen Size Selection Method",
     "pattern": null,
     "required": false,
-    "row_number": 100,
+    "row_number": 99,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -2261,7 +2261,7 @@
     "parameter": "Screen Type",
     "pattern": null,
     "required": false,
-    "row_number": 89,
+    "row_number": 88,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Liners and Screens",
@@ -2304,7 +2304,7 @@
     "parameter": "Additional Bridging Agent",
     "pattern": null,
     "required": false,
-    "row_number": 72,
+    "row_number": 71,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "OH Drilling Details",
@@ -2339,7 +2339,7 @@
     "parameter": "Bridging Agent Loading",
     "pattern": null,
     "required": false,
-    "row_number": 74,
+    "row_number": 73,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "OH Drilling Details",
@@ -2389,13 +2389,21 @@
     "parameter": "Drill Bit Size",
     "pattern": null,
     "required": false,
-    "row_number": 68,
+    "row_number": 67,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "OH Drilling Details",
     "table": "completion_interval",
-    "unit": "",
-    "unit_choices": [],
+    "unit": "in",
+    "unit_choices": [
+      {
+        "group": "default",
+        "offset": 0,
+        "scale": 1,
+        "system": "both",
+        "unit": "in"
+      }
+    ],
     "unit_column": null,
     "visibility": {
       "hide": [],
@@ -2429,7 +2437,7 @@
     "parameter": "Mud PSD D10/D25/D40/D50/D75/D90",
     "pattern": null,
     "required": false,
-    "row_number": 75,
+    "row_number": 74,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "OH Drilling Details",
@@ -2464,7 +2472,7 @@
     "parameter": "PST Test Volume",
     "pattern": null,
     "required": false,
-    "row_number": 76,
+    "row_number": 75,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "OH Drilling Details",
@@ -2507,7 +2515,7 @@
     "parameter": "Reservoir Drilling Fluid Density",
     "pattern": null,
     "required": false,
-    "row_number": 70,
+    "row_number": 69,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "OH Drilling Details",
@@ -2562,7 +2570,7 @@
     "parameter": "Reservoir Drilling Fluid Type",
     "pattern": null,
     "required": false,
-    "row_number": 69,
+    "row_number": 68,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "OH Drilling Details",
@@ -2604,7 +2612,7 @@
     "parameter": "Weighting Agent",
     "pattern": null,
     "required": false,
-    "row_number": 71,
+    "row_number": 70,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "OH Drilling Details",
@@ -2639,7 +2647,7 @@
     "parameter": "Weighting Agent Loading",
     "pattern": null,
     "required": false,
-    "row_number": 73,
+    "row_number": 72,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "OH Drilling Details",
@@ -2689,7 +2697,7 @@
     "parameter": "Casing Size above OH",
     "pattern": null,
     "required": false,
-    "row_number": 62,
+    "row_number": 61,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Open Hole Details",
@@ -2742,7 +2750,7 @@
     "parameter": "Filter cake breaker placement",
     "pattern": null,
     "required": false,
-    "row_number": 66,
+    "row_number": 65,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Open Hole Details",
@@ -2777,7 +2785,7 @@
     "parameter": "Gross Open Hole Length",
     "pattern": null,
     "required": false,
-    "row_number": 64,
+    "row_number": 63,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Open Hole Details",
@@ -2827,7 +2835,7 @@
     "parameter": "Hole Size",
     "pattern": null,
     "required": false,
-    "row_number": 63,
+    "row_number": 62,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Open Hole Details",
@@ -2877,7 +2885,7 @@
     "parameter": "Net Pay Length",
     "pattern": null,
     "required": false,
-    "row_number": 65,
+    "row_number": 64,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Open Hole Details",
@@ -2930,7 +2938,7 @@
     "parameter": "Open Hole Packers deployed",
     "pattern": null,
     "required": false,
-    "row_number": 67,
+    "row_number": 66,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Open Hole Details",
@@ -2969,7 +2977,7 @@
     "parameter": "CH Sand Control Selected Method",
     "pattern": null,
     "required": false,
-    "row_number": 87,
+    "row_number": 86,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Sand Control Details",
@@ -3002,12 +3010,13 @@
     "min_value": null,
     "options": [
       "OHGP",
+      "OHFP",
       "SAS"
     ],
     "parameter": "OH Sand Control Selected Method",
     "pattern": null,
     "required": false,
-    "row_number": 86,
+    "row_number": 85,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Sand Control Details",
@@ -3050,7 +3059,7 @@
     "parameter": "Sand Control Decision Justification",
     "pattern": null,
     "required": false,
-    "row_number": 88,
+    "row_number": 87,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Sand Control Details",
@@ -3074,7 +3083,7 @@
     "parameter": "Number of sand bodies",
     "pattern": null,
     "required": false,
-    "row_number": 120,
+    "row_number": 119,
     "scope": "completion_interval",
     "step": 1,
     "subcategory": "Sand Bodies",
@@ -3098,7 +3107,7 @@
     "parameter": "Well Deviation",
     "pattern": null,
     "required": false,
-    "row_number": 59,
+    "row_number": 58,
     "scope": "completion_interval",
     "step": null,
     "subcategory": "Wellbore properties",
@@ -3130,7 +3139,7 @@
     "parameter": "Percentage of ideal PI or skin achieved",
     "pattern": null,
     "required": false,
-    "row_number": 124,
+    "row_number": 123,
     "scope": "sand_body",
     "step": 1,
     "subcategory": "Pre-production and cleanup details",
@@ -3168,7 +3177,7 @@
     "parameter": "Remedial Acid Helped Productivity",
     "pattern": null,
     "required": false,
-    "row_number": 122,
+    "row_number": 121,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Pre-production and cleanup details",
@@ -3197,7 +3206,7 @@
     "parameter": "Remedial Acid Pumped as Productivity was Below Expectation",
     "pattern": null,
     "required": false,
-    "row_number": 121,
+    "row_number": 120,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Pre-production and cleanup details",
@@ -3229,7 +3238,7 @@
     "parameter": "Remedial Acid Type",
     "pattern": null,
     "required": false,
-    "row_number": 123,
+    "row_number": 122,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Pre-production and cleanup details",
@@ -3253,7 +3262,7 @@
     "parameter": "Core Derived Min Rock UCS",
     "pattern": null,
     "required": false,
-    "row_number": 129,
+    "row_number": 128,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3292,7 +3301,7 @@
     "parameter": "Core Derived P50 Rock UCS",
     "pattern": null,
     "required": false,
-    "row_number": 130,
+    "row_number": 129,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3331,7 +3340,7 @@
     "parameter": "Fines Content (Sub 44 microns)",
     "pattern": null,
     "required": false,
-    "row_number": 137,
+    "row_number": 136,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3368,7 +3377,7 @@
     "parameter": "Fluid Type",
     "pattern": null,
     "required": false,
-    "row_number": 144,
+    "row_number": 143,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3392,7 +3401,7 @@
     "parameter": "Frac gradient",
     "pattern": null,
     "required": false,
-    "row_number": 149,
+    "row_number": 148,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3431,7 +3440,7 @@
     "parameter": "Gas Formation Volume Factor (Bg) at downhole conditions",
     "pattern": null,
     "required": false,
-    "row_number": 145,
+    "row_number": 144,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3481,10 +3490,10 @@
       "subcategory_show": []
     }
   },
-  "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Initial PI": {
+  "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Initial PI of the sand body": {
     "category": "Reservoir Characterization",
     "db_columns": [
-      "initial_pi"
+      "initial_pi_of_the_sand_body"
     ],
     "db_type": "Numeric",
     "kind": "number",
@@ -3493,10 +3502,10 @@
     "min_length": null,
     "min_value": 0,
     "options": [],
-    "parameter": "Initial PI",
+    "parameter": "Initial PI of the sand body",
     "pattern": null,
     "required": false,
-    "row_number": 138,
+    "row_number": 137,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3549,7 +3558,7 @@
         "unit": "Sm\u00b3 gas/d/kPa"
       }
     ],
-    "unit_column": "initial_pi_unit"
+    "unit_column": "initial_pi_of_the_sand_body_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Initial Total Skin from PTA": {
     "category": "Reservoir Characterization",
@@ -3566,7 +3575,7 @@
     "parameter": "Initial Total Skin from PTA",
     "pattern": null,
     "required": false,
-    "row_number": 143,
+    "row_number": 142,
     "scope": "sand_body",
     "step": 1,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3590,7 +3599,7 @@
     "parameter": "Oil Bubble Point (Pb)",
     "pattern": null,
     "required": false,
-    "row_number": 147,
+    "row_number": 146,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3629,7 +3638,7 @@
     "parameter": "Oil Formation Volume Factor (Bo) at downhole conditions",
     "pattern": null,
     "required": false,
-    "row_number": 145,
+    "row_number": 144,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3692,7 +3701,7 @@
     "parameter": "PSD D10/D25/D40/D50/D75/D90",
     "pattern": null,
     "required": false,
-    "row_number": 136,
+    "row_number": 135,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3727,7 +3736,7 @@
     "parameter": "PSD Measurement Method",
     "pattern": null,
     "required": false,
-    "row_number": 135,
+    "row_number": 134,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3751,7 +3760,7 @@
     "parameter": "Permeability",
     "pattern": null,
     "required": false,
-    "row_number": 140,
+    "row_number": 139,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3783,7 +3792,7 @@
     "parameter": "Porosity",
     "pattern": null,
     "required": false,
-    "row_number": 139,
+    "row_number": 138,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3815,7 +3824,7 @@
     "parameter": "Producing Fluid Viscosity",
     "pattern": null,
     "required": false,
-    "row_number": 146,
+    "row_number": 145,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3854,7 +3863,7 @@
     "parameter": "Reservoir Pressure at Time of Completion",
     "pattern": null,
     "required": false,
-    "row_number": 126,
+    "row_number": 125,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3893,7 +3902,7 @@
     "parameter": "Reservoir Temperature",
     "pattern": null,
     "required": false,
-    "row_number": 128,
+    "row_number": 127,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3932,7 +3941,7 @@
     "parameter": "Reservoir pressure at first sand production",
     "pattern": null,
     "required": false,
-    "row_number": 127,
+    "row_number": 126,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -3971,7 +3980,7 @@
     "parameter": "Rock compressibility at first sand production",
     "pattern": null,
     "required": false,
-    "row_number": 133,
+    "row_number": 132,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -4010,7 +4019,7 @@
     "parameter": "Rock compressibility at initial reservoir pressure",
     "pattern": null,
     "required": false,
-    "row_number": 132,
+    "row_number": 131,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -4049,7 +4058,7 @@
     "parameter": "Shale Reactivity CEC",
     "pattern": null,
     "required": false,
-    "row_number": 131,
+    "row_number": 130,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -4073,7 +4082,7 @@
     "parameter": "Solution Gas Ratio (Rs)",
     "pattern": null,
     "required": false,
-    "row_number": 148,
+    "row_number": 147,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -4117,7 +4126,7 @@
     "parameter": "Source of sand sample",
     "pattern": null,
     "required": false,
-    "row_number": 134,
+    "row_number": 133,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -4126,10 +4135,10 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Virgin Reservoir Pressure": {
+  "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::Virgin Reservoir Pressure at the top of the sand body": {
     "category": "Reservoir Characterization",
     "db_columns": [
-      "virgin_reservoir_pressure"
+      "virgin_reservoir_pressure_at_the_top_of_the_sand_body"
     ],
     "db_type": "Numeric",
     "kind": "number",
@@ -4138,10 +4147,10 @@
     "min_length": null,
     "min_value": 0,
     "options": [],
-    "parameter": "Virgin Reservoir Pressure",
+    "parameter": "Virgin Reservoir Pressure at the top of the sand body",
     "pattern": null,
     "required": false,
-    "row_number": 125,
+    "row_number": 124,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -4163,7 +4172,7 @@
         "unit": "kPa"
       }
     ],
-    "unit_column": "virgin_reservoir_pressure_unit"
+    "unit_column": "virgin_reservoir_pressure_at_the_top_of_the_sand_body_unit"
   },
   "sand_body::Reservoir Characterization::Reservoir Rock and Fluid Properties::k.h from Log": {
     "category": "Reservoir Characterization",
@@ -4180,7 +4189,7 @@
     "parameter": "k.h from Log",
     "pattern": null,
     "required": false,
-    "row_number": 142,
+    "row_number": 141,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -4219,7 +4228,7 @@
     "parameter": "k.h from PTA",
     "pattern": null,
     "required": false,
-    "row_number": 141,
+    "row_number": 140,
     "scope": "sand_body",
     "step": null,
     "subcategory": "Reservoir Rock and Fluid Properties",
@@ -4258,7 +4267,7 @@
     "parameter": "Number of Completion Intervals",
     "pattern": null,
     "required": false,
-    "row_number": 58,
+    "row_number": 57,
     "scope": "well",
     "step": 1,
     "subcategory": "Completion Intervals",
@@ -4349,10 +4358,10 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Failure Confirmation::Sand failure": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Failure Confirmation::Sand Control Failure": {
+    "category": "Well Specific Information",
     "db_columns": [
-      "sand_failure"
+      "sand_control_failure"
     ],
     "db_type": "Boolean",
     "kind": "select",
@@ -4364,7 +4373,7 @@
       "Yes",
       "No"
     ],
-    "parameter": "Sand failure",
+    "parameter": "Sand Control Failure",
     "pattern": null,
     "required": true,
     "row_number": 16,
@@ -4376,8 +4385,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Current well status": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Current well status": {
+    "category": "Well Specific Information",
     "db_columns": [
       "current_well_status"
     ],
@@ -4406,8 +4415,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Did sanding start immediately after water breakthrough": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Did sanding start immediately after water breakthrough": {
+    "category": "Well Specific Information",
     "db_columns": [
       "did_sanding_start_immediately_after_water_breakthrough"
     ],
@@ -4436,7 +4445,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -4444,8 +4453,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::First production date": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::First production date": {
+    "category": "Well Specific Information",
     "db_columns": [
       "first_production_date"
     ],
@@ -4459,7 +4468,7 @@
     "parameter": "First production date",
     "pattern": null,
     "required": false,
-    "row_number": 39,
+    "row_number": 38,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -4468,8 +4477,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Gas Rate @ Shut-in": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Gas Rate @ Shut-in": {
+    "category": "Well Specific Information",
     "db_columns": [
       "gas_rate_shut_in"
     ],
@@ -4483,7 +4492,7 @@
     "parameter": "Gas Rate @ Shut-in",
     "pattern": null,
     "required": false,
-    "row_number": 44,
+    "row_number": 43,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -4510,7 +4519,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -4518,8 +4527,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Gas Rate @ The First Choke Back": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Gas Rate @ The First Choke Back": {
+    "category": "Well Specific Information",
     "db_columns": [
       "gas_rate_the_first_choke_back"
     ],
@@ -4533,7 +4542,7 @@
     "parameter": "Gas Rate @ The First Choke Back",
     "pattern": null,
     "required": false,
-    "row_number": 43,
+    "row_number": 42,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -4560,7 +4569,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -4568,8 +4577,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::How is sand production known?": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::How is sand production known?": {
+    "category": "Well Specific Information",
     "db_columns": [
       "how_is_sand_production_known"
     ],
@@ -4599,7 +4608,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -4607,8 +4616,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Initial Mechanical / Completion skin": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Initial Mechanical / Completion skin": {
+    "category": "Well Specific Information",
     "db_columns": [
       "initial_mechanical_completion_skin"
     ],
@@ -4631,8 +4640,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Initial PI": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Initial PI": {
+    "category": "Well Specific Information",
     "db_columns": [
       "initial_pi"
     ],
@@ -4692,8 +4701,8 @@
     ],
     "unit_column": "initial_pi_unit"
   },
-  "well::Well Specific::Sand Production & Well Performance::Initial non-Darcy skin": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Initial non-Darcy skin": {
+    "category": "Well Specific Information",
     "db_columns": [
       "initial_non_darcy_skin"
     ],
@@ -4716,8 +4725,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Initial total skin": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Initial total skin": {
+    "category": "Well Specific Information",
     "db_columns": [
       "initial_total_skin"
     ],
@@ -4740,8 +4749,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Known sand face production chemistry issues": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Known sand face production chemistry issues": {
+    "category": "Well Specific Information",
     "db_columns": [
       "known_sand_face_production_chemistry_issues"
     ],
@@ -4755,7 +4764,7 @@
     "parameter": "Known sand face production chemistry issues",
     "pattern": null,
     "required": false,
-    "row_number": 51,
+    "row_number": 50,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -4764,8 +4773,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Last production date": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Last production date": {
+    "category": "Well Specific Information",
     "db_columns": [
       "last_production_date"
     ],
@@ -4779,7 +4788,7 @@
     "parameter": "Last production date",
     "pattern": null,
     "required": false,
-    "row_number": 40,
+    "row_number": 39,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -4788,8 +4797,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Lessons learned classification / RCFA outcomes": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Lessons learned classification / RCFA outcomes": {
+    "category": "Well Specific Information",
     "db_columns": [
       "lessons_learned_classification_rcfa_outcomes"
     ],
@@ -4815,7 +4824,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -4823,8 +4832,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Max drawdown over well life": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Max drawdown over well life": {
+    "category": "Well Specific Information",
     "db_columns": [
       "max_drawdown_over_well_life"
     ],
@@ -4838,7 +4847,7 @@
     "parameter": "Max drawdown over well life",
     "pattern": null,
     "required": false,
-    "row_number": 52,
+    "row_number": 51,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -4862,8 +4871,8 @@
     ],
     "unit_column": "max_drawdown_over_well_life_unit"
   },
-  "well::Well Specific::Sand Production & Well Performance::Mechanical / Completion skin after choke-back": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Mechanical / Completion skin after choke-back": {
+    "category": "Well Specific Information",
     "db_columns": [
       "mechanical_completion_skin_after_choke_back"
     ],
@@ -4889,7 +4898,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -4897,8 +4906,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Non-Darcy skin after choke-back": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Non-Darcy skin after choke-back": {
+    "category": "Well Specific Information",
     "db_columns": [
       "non_darcy_skin_after_choke_back"
     ],
@@ -4924,7 +4933,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -4932,8 +4941,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Oil Rate @ Shut-in": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Oil Rate @ Shut-in": {
+    "category": "Well Specific Information",
     "db_columns": [
       "oil_rate_shut_in"
     ],
@@ -4947,7 +4956,7 @@
     "parameter": "Oil Rate @ Shut-in",
     "pattern": null,
     "required": false,
-    "row_number": 42,
+    "row_number": 41,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -4974,7 +4983,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -4982,8 +4991,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Oil Rate @ The First Choke Back": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Oil Rate @ The First Choke Back": {
+    "category": "Well Specific Information",
     "db_columns": [
       "oil_rate_the_first_choke_back"
     ],
@@ -4997,7 +5006,7 @@
     "parameter": "Oil Rate @ The First Choke Back",
     "pattern": null,
     "required": false,
-    "row_number": 41,
+    "row_number": 40,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5024,7 +5033,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -5032,8 +5041,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::P50 drawdown over well life": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::P50 drawdown over well life": {
+    "category": "Well Specific Information",
     "db_columns": [
       "p50_drawdown_over_well_life"
     ],
@@ -5047,7 +5056,7 @@
     "parameter": "P50 drawdown over well life",
     "pattern": null,
     "required": false,
-    "row_number": 53,
+    "row_number": 52,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5071,8 +5080,8 @@
     ],
     "unit_column": "p50_drawdown_over_well_life_unit"
   },
-  "well::Well Specific::Sand Production & Well Performance::Peak gas rate": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Peak gas rate": {
+    "category": "Well Specific Information",
     "db_columns": [
       "peak_gas_rate"
     ],
@@ -5086,7 +5095,7 @@
     "parameter": "Peak gas rate",
     "pattern": null,
     "required": true,
-    "row_number": 48,
+    "row_number": 47,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5110,8 +5119,8 @@
     ],
     "unit_column": "peak_gas_rate_unit"
   },
-  "well::Well Specific::Sand Production & Well Performance::Peak oil rate": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Peak oil rate": {
+    "category": "Well Specific Information",
     "db_columns": [
       "peak_oil_rate"
     ],
@@ -5125,7 +5134,7 @@
     "parameter": "Peak oil rate",
     "pattern": null,
     "required": true,
-    "row_number": 47,
+    "row_number": 46,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5149,8 +5158,8 @@
     ],
     "unit_column": "peak_oil_rate_unit"
   },
-  "well::Well Specific::Sand Production & Well Performance::Peak water cut": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Peak water cut": {
+    "category": "Well Specific Information",
     "db_columns": [
       "peak_water_cut"
     ],
@@ -5164,7 +5173,7 @@
     "parameter": "Peak water cut",
     "pattern": null,
     "required": true,
-    "row_number": 50,
+    "row_number": 49,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5181,8 +5190,8 @@
     ],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Peak water rate": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Peak water rate": {
+    "category": "Well Specific Information",
     "db_columns": [
       "peak_water_rate"
     ],
@@ -5196,7 +5205,7 @@
     "parameter": "Peak water rate",
     "pattern": null,
     "required": true,
-    "row_number": 49,
+    "row_number": 48,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5220,8 +5229,8 @@
     ],
     "unit_column": "peak_water_rate_unit"
   },
-  "well::Well Specific::Sand Production & Well Performance::Post shut-in oil/gas production rate response": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Post shut-in oil/gas production rate response": {
+    "category": "Well Specific Information",
     "db_columns": [
       "post_shut_in_oil_gas_production_rate_response"
     ],
@@ -5242,7 +5251,7 @@
     "parameter": "Post shut-in oil/gas production rate response",
     "pattern": null,
     "required": false,
-    "row_number": 55,
+    "row_number": 54,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5251,8 +5260,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Post-shut-in sand response": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Post-shut-in sand response": {
+    "category": "Well Specific Information",
     "db_columns": [
       "post_shut_in_sand_response"
     ],
@@ -5273,7 +5282,7 @@
     "parameter": "Post-shut-in sand response",
     "pattern": null,
     "required": false,
-    "row_number": 57,
+    "row_number": 56,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5282,8 +5291,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Post-shut-in water-cut response": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Post-shut-in water-cut response": {
+    "category": "Well Specific Information",
     "db_columns": [
       "post_shut_in_water_cut_response"
     ],
@@ -5304,7 +5313,7 @@
     "parameter": "Post-shut-in water-cut response",
     "pattern": null,
     "required": false,
-    "row_number": 56,
+    "row_number": 55,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5313,8 +5322,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Sand failure mechanism": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Sand failure mechanism": {
+    "category": "Well Specific Information",
     "db_columns": [
       "sand_failure_mechanism"
     ],
@@ -5359,7 +5368,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -5367,8 +5376,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Sand production rate at complete well failure": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Sand production rate at complete well failure": {
+    "category": "Well Specific Information",
     "db_columns": [
       "sand_production_rate_at_complete_well_failure"
     ],
@@ -5439,8 +5448,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Sand production rate at first choke back": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Sand production rate at first choke back": {
+    "category": "Well Specific Information",
     "db_columns": [
       "sand_production_rate_at_first_choke_back"
     ],
@@ -5511,8 +5520,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Sand production rate at well shut-in due to sand": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Sand production rate at well shut-in due to sand": {
+    "category": "Well Specific Information",
     "db_columns": [
       "sand_production_rate_at_well_shut_in_due_to_sand"
     ],
@@ -5583,8 +5592,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Sand rate quantification": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Sand rate quantification": {
+    "category": "Well Specific Information",
     "db_columns": [
       "sand_rate_quantification"
     ],
@@ -5614,7 +5623,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -5622,8 +5631,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Severity of sand production": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Severity of sand production": {
+    "category": "Well Specific Information",
     "db_columns": [
       "severity_of_sand_production"
     ],
@@ -5680,7 +5689,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -5688,8 +5697,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Time to complete well failure": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Time to complete well failure": {
+    "category": "Well Specific Information",
     "db_columns": [
       "time_to_complete_well_failure"
     ],
@@ -5723,7 +5732,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -5731,8 +5740,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Time to first choke back": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Time to first choke back": {
+    "category": "Well Specific Information",
     "db_columns": [
       "time_to_first_choke_back"
     ],
@@ -5766,7 +5775,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -5774,8 +5783,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Time to well shut-in due to sand": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Time to well shut-in due to sand": {
+    "category": "Well Specific Information",
     "db_columns": [
       "time_to_well_shut_in_due_to_sand"
     ],
@@ -5809,7 +5818,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -5817,8 +5826,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Total skin after choke-back": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Total skin after choke-back": {
+    "category": "Well Specific Information",
     "db_columns": [
       "total_skin_after_choke_back"
     ],
@@ -5844,7 +5853,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -5852,8 +5861,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Typical post-shut-in bean-up strategy": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Typical post-shut-in bean-up strategy": {
+    "category": "Well Specific Information",
     "db_columns": [
       "typical_post_shut_in_bean_up_strategy"
     ],
@@ -5873,7 +5882,7 @@
     "parameter": "Typical post-shut-in bean-up strategy",
     "pattern": null,
     "required": false,
-    "row_number": 54,
+    "row_number": 53,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5882,8 +5891,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Sand Production & Well Performance::Water Rate @ Shut-in": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Water Rate @ Shut-in": {
+    "category": "Well Specific Information",
     "db_columns": [
       "water_rate_shut_in"
     ],
@@ -5897,7 +5906,7 @@
     "parameter": "Water Rate @ Shut-in",
     "pattern": null,
     "required": false,
-    "row_number": 46,
+    "row_number": 45,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5924,7 +5933,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -5932,8 +5941,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Water Rate @ The First Choke Back": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Water Rate @ The First Choke Back": {
+    "category": "Well Specific Information",
     "db_columns": [
       "water_rate_the_first_choke_back"
     ],
@@ -5947,7 +5956,7 @@
     "parameter": "Water Rate @ The First Choke Back",
     "pattern": null,
     "required": false,
-    "row_number": 45,
+    "row_number": 44,
     "scope": "well",
     "step": null,
     "subcategory": "Sand Production & Well Performance",
@@ -5974,7 +5983,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -5982,8 +5991,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Well PI after choke-back": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Sand Production & Well Performance::Well PI after choke-back": {
+    "category": "Well Specific Information",
     "db_columns": [
       "well_pi_after_choke_back"
     ],
@@ -6046,7 +6055,7 @@
       "hide": [],
       "show": [
         {
-          "parameter": "Sand failure",
+          "parameter": "Sand Control Failure",
           "value": "Yes"
         }
       ],
@@ -6054,32 +6063,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Sand Production & Well Performance::Well start-up date": {
-    "category": "Well Specific",
-    "db_columns": [
-      "well_start_up_date"
-    ],
-    "db_type": "Date",
-    "kind": "date",
-    "max_length": null,
-    "max_value": null,
-    "min_length": null,
-    "min_value": null,
-    "options": [],
-    "parameter": "Well start-up date",
-    "pattern": null,
-    "required": false,
-    "row_number": 38,
-    "scope": "well",
-    "step": null,
-    "subcategory": "Sand Production & Well Performance",
-    "table": "well",
-    "unit": "",
-    "unit_choices": [],
-    "unit_column": null
-  },
-  "well::Well Specific::Well & Field Identification::Field name": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Field name": {
+    "category": "Well Specific Information",
     "db_columns": [
       "field_name"
     ],
@@ -6102,8 +6087,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Well & Field Identification::Operating environment": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Operating environment": {
+    "category": "Well Specific Information",
     "db_columns": [
       "operating_environment"
     ],
@@ -6132,8 +6117,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Well & Field Identification::Operator name": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Operator name": {
+    "category": "Well Specific Information",
     "db_columns": [
       "operator_name"
     ],
@@ -6156,8 +6141,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Well & Field Identification::Operator type": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Operator type": {
+    "category": "Well Specific Information",
     "db_columns": [
       "operator_type"
     ],
@@ -6188,8 +6173,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Well & Field Identification::Region": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Region": {
+    "category": "Well Specific Information",
     "db_columns": [
       "region"
     ],
@@ -6229,8 +6214,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Well & Field Identification::Tree type": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Tree type": {
+    "category": "Well Specific Information",
     "db_columns": [
       "tree_type"
     ],
@@ -6267,8 +6252,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Well & Field Identification::Water depth": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Water depth": {
+    "category": "Well Specific Information",
     "db_columns": [
       "water_depth"
     ],
@@ -6317,8 +6302,8 @@
       "subcategory_show": []
     }
   },
-  "well::Well Specific::Well & Field Identification::Well TD, MD": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Well TD, MD": {
+    "category": "Well Specific Information",
     "db_columns": [
       "well_td_md"
     ],
@@ -6356,8 +6341,8 @@
     ],
     "unit_column": "well_td_md_unit"
   },
-  "well::Well Specific::Well & Field Identification::Well TD, TVD (RKB)": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Well TD, TVD (RKB)": {
+    "category": "Well Specific Information",
     "db_columns": [
       "well_td_tvd_rkb"
     ],
@@ -6395,8 +6380,8 @@
     ],
     "unit_column": "well_td_tvd_rkb_unit"
   },
-  "well::Well Specific::Well & Field Identification::Well identification number (anonymized)": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Well identification number (anonymized)": {
+    "category": "Well Specific Information",
     "db_columns": [
       "well_identification_number_anonymized"
     ],
@@ -6419,8 +6404,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Well & Field Identification::Well name (anonymized)": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Well name (anonymized)": {
+    "category": "Well Specific Information",
     "db_columns": [
       "well_name_anonymized"
     ],
@@ -6443,8 +6428,8 @@
     "unit_choices": [],
     "unit_column": null
   },
-  "well::Well Specific::Well & Field Identification::Well type": {
-    "category": "Well Specific",
+  "well::Well Specific Information::Well & Field Identification::Well type": {
+    "category": "Well Specific Information",
     "db_columns": [
       "well_type"
     ],

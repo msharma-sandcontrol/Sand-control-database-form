@@ -1,7 +1,7 @@
 # Unit conversion review
 
-This is the conversion inventory for the 71 unit-bearing workbook rows plus
-the conditional Gas Bg alternative to row 145 (72 effective fields) in
+This is the conversion inventory for the 72 unit-bearing workbook rows plus
+the conditional Gas Bg alternative to row 144 (73 effective fields) in
 `MASTER.xlsx` (branch `feature/form-save-load`). The form implements these
 conversions, and this file records the factors and assumptions for review.
 Standard gas volumes on both the Field and SI sides use **60°F (15.5556°C) and 14.73 psia (101.56 kPa absolute)**. The SI
@@ -20,47 +20,48 @@ however many times the units are switched.
 
 | Workbook row(s) | Field unit | SI unit | Field → SI rule | Review note |
 | --- | --- | --- | --- | --- |
-| 8, 10, 11, 64, 65, 78, 79 | ft | m | × 0.3048 | Exact international foot. |
+| 8, 10, 11, 63, 64, 77, 78 | ft | m | × 0.3048 | Exact international foot. |
 | 18–20 | days | days | × 1 | Keep practical time unit. |
 | 25–27 | pptb (liquid basis) | mg/L liquid | × 2.8530101742 | One pound per 1,000 petroleum barrels. |
 | 25–27 | lb/MMSCF (gas basis) | mg/Sm³ gas | × 16.018463374 | Same 60°F/14.73 psia gas reference on both sides. |
-| 28, 32, 138 | stb/d/psi (liquid PI) | Sm³ liquid/d/kPa | × 0.023059157584 | Same stock-tank liquid reference on both sides. |
-| 28, 32, 138 | MMSCF/d/psi (gas PI) | Sm³ gas/d/kPa | × 4107.0113694 | Same 60°F/14.73 psia gas reference on both sides. |
-| 41, 42, 45–47, 49 | stb/d | Sm³/d | × 0.158987294928 | Same stock-tank liquid reference on both sides. |
-| 43, 44, 48 | MMSCF/d | Sm³/d | × 28316.846592 | Same 60°F/14.73 psia gas reference on both sides. |
-| 50, 102, 115, 118, 124, 137, 139 | % | % | × 1 | Keep percentage scale. |
-| 52, 53, 85, 114, 125–127, 129, 130, 147 | psi | kPa | × 6.8947572932 | Pressure, pressure difference, or strength. |
-| 59 | degrees | degrees | × 1 | Keep angle convention (0° vertical, 90° horizontal). |
-| 62, 63, 77, 80, 93 | inch | cm | × 2.54 | Exact. |
-| 70, 110 | ppg (fluid density) | g/cm³ | × 0.11982642732 | One pound mass per US gallon. |
-| 73, 74 | lb/bbl | kg/m³ | × 2.8530101742 | One pound mass per petroleum barrel. |
-| 76 | L | L | × 1 | Keep practical volume unit. |
-| 81 | shots/ft | shots/m | × 3.2808398950 | Count per length. |
-| 91 | screen gauge | micron | × 25.4 | One screen-gauge point is treated as 0.001 inch of opening width. |
-| 91, 92, 136 | micron | micron | × 1 | The six row-136 PSD numbers share this unit. |
-| 106, 111 | lbs/ft | kg/m | × 1.4881639436 | One pound mass per foot. |
-| 112 | ppa | kg/m³ of clean fluid | × 119.82642732 | One pound of proppant added per US gallon of clean fracturing fluid. |
-| 113 | bpm | L/s | × 2.6497882488 | Petroleum barrels per minute. |
-| 128 | degF | °C | (°F − 32) × 5/9 | Temperature has an offset, not a single multiplier. |
-| 132, 133 | microsips | 1/Pa | × 1.4503773773 × 10⁻¹⁰ | One microsip = 10⁻⁶/psi; matches advisor branch's target label. |
-| 140 | md | md | × 1 | Keep practical permeability unit. |
-| 141, 142 | md-ft | md-m | × 0.3048 | Only the length changes. |
-| 145 (Oil Bo) | rb/STB | m³ reservoir/m³ stock tank | × 1 | Same volume unit in numerator and denominator; [BOEM defines Bo as reservoir barrels per stock-tank barrel](https://www.boem.gov/Instructions-BOEM-0127/). |
-| 145 (Gas Bg) | reservoir ft³/scf | m³ reservoir/Sm³ gas | × 1 | Both volumes change from ft³ to m³; gas standard remains 60°F/14.73 psia. |
-| 145 (Gas Bg) | rb/scf | m³ reservoir/Sm³ gas | × 5.6145833333 | Alternative gas Field unit: one reservoir barrel is 5.6145833333 ft³. |
-| 146 | cP | Pa·s | × 0.001 | Dynamic viscosity. |
-| 148 | scf/stb | Sm³/Sm³ | × 0.17810760668 | Gas basis: 60°F/14.73 psia; liquid basis: stock tank at 60°F. |
-| 149 | ppg (equivalent mud weight for frac gradient) | kPa/m | × 1.1750958334 | Treats the row as equivalent mud weight and uses standard gravity. |
+| 28, 32, 137 | stb/d/psi (liquid PI) | Sm³ liquid/d/kPa | × 0.023059157584 | Same stock-tank liquid reference on both sides. |
+| 28, 32, 137 | MMSCF/d/psi (gas PI) | Sm³ gas/d/kPa | × 4107.0113694 | Same 60°F/14.73 psia gas reference on both sides. |
+| 40, 41, 44–46, 48 | stb/d | Sm³/d | × 0.158987294928 | Same stock-tank liquid reference on both sides. |
+| 42, 43, 47 | MMSCF/d | Sm³/d | × 28316.846592 | Same 60°F/14.73 psia gas reference on both sides. |
+| 49, 101, 114, 117, 123, 136, 138 | % | % | × 1 | Keep percentage scale. |
+| 51, 52, 84, 113, 124–126, 128, 129, 146 | psi | kPa | × 6.8947572932 | Pressure, pressure difference, or strength. |
+| 58 | degrees | degrees | × 1 | Keep angle convention (0° vertical, 90° horizontal). |
+| 61, 62, 76, 79, 92 | inch | cm | × 2.54 | Exact. |
+| 67 | in | in | × 1 | Drill Bit Size: bit sizes are quoted in inches in both systems. |
+| 69, 109 | ppg (fluid density) | g/cm³ | × 0.11982642732 | One pound mass per US gallon. |
+| 72, 73 | lb/bbl | kg/m³ | × 2.8530101742 | One pound mass per petroleum barrel. |
+| 75 | L | L | × 1 | Keep practical volume unit. |
+| 80 | shots/ft | shots/m | × 3.2808398950 | Count per length. |
+| 90 | screen gauge | micron | × 25.4 | One screen-gauge point is treated as 0.001 inch of opening width. |
+| 90, 91, 135 | micron | micron | × 1 | The six row-135 PSD numbers share this unit. |
+| 105, 110 | lbs/ft | kg/m | × 1.4881639436 | One pound mass per foot. |
+| 111 | ppa | kg/m³ of clean fluid | × 119.82642732 | One pound of proppant added per US gallon of clean fracturing fluid. |
+| 112 | bpm | L/s | × 2.6497882488 | Petroleum barrels per minute. |
+| 127 | degF | °C | (°F − 32) × 5/9 | Temperature has an offset, not a single multiplier. |
+| 131, 132 | microsips | 1/Pa | × 1.4503773773 × 10⁻¹⁰ | One microsip = 10⁻⁶/psi; matches advisor branch's target label. |
+| 139 | md | md | × 1 | Keep practical permeability unit. |
+| 140, 141 | md-ft | md-m | × 0.3048 | Only the length changes. |
+| 144 (Oil Bo) | rb/STB | m³ reservoir/m³ stock tank | × 1 | Same volume unit in numerator and denominator; [BOEM defines Bo as reservoir barrels per stock-tank barrel](https://www.boem.gov/Instructions-BOEM-0127/). |
+| 144 (Gas Bg) | reservoir ft³/scf | m³ reservoir/Sm³ gas | × 1 | Both volumes change from ft³ to m³; gas standard remains 60°F/14.73 psia. |
+| 144 (Gas Bg) | rb/scf | m³ reservoir/Sm³ gas | × 5.6145833333 | Alternative gas Field unit: one reservoir barrel is 5.6145833333 ft³. |
+| 145 | cP | Pa·s | × 0.001 | Dynamic viscosity. |
+| 147 | scf/stb | Sm³/Sm³ | × 0.17810760668 | Gas basis: 60°F/14.73 psia; liquid basis: stock tank at 60°F. |
+| 148 | ppg (equivalent mud weight for frac gradient) | kPa/m | × 1.1750958334 | Treats the row as equivalent mud weight and uses standard gravity. |
 
 ## Selection and save rules
 
 - Every unit-bearing field starts in a Field unit. Bo uses rb/STB; Bg offers
   reservoir ft³/scf and rb/scf as Field choices, plus m³/Sm³ gas as its metric
-  choice. Both FVF alternatives are numbered 145. Sand-body Fluid Type shows
+  choice. Both FVF alternatives are numbered 144. Sand-body Fluid Type shows
   and saves only Bo for Oil, or Bg for Condensate, Wet Gas, and Dry Gas.
-- Sand rates (rows 25–27) and PI (rows 28, 32, 138) have liquid and gas
+- Sand rates (rows 25–27) and PI (rows 28, 32, 137) have liquid and gas
   units. Well type chooses the basis for rows 25–28 and 32: liquid for Oil
-  Producer, gas for Gas and Gas Condensate Producer. Row 138 follows its own
+  Producer, gas for Gas and Gas Condensate Producer. Row 137 follows its own
   Sand Body's Fluid Type: liquid for Oil, gas for Condensate, Wet Gas, and
   Dry Gas. It uses Well type while Fluid Type is blank, and liquid when both
   are blank. Each selector offers only Field or SI within the chosen basis.

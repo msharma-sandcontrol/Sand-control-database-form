@@ -119,7 +119,7 @@ def make_payload():
                  environment: str = "Onshore") -> dict:
         buckets: dict[str, dict] = {scope: {} for scope in _BY_SCOPE}
         controls = {
-            "Sand failure": sand_failure,
+            "Sand Control Failure": sand_failure,
             "Well type": well_type,
             "Operating environment": environment,
         }

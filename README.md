@@ -57,7 +57,7 @@ the last value the user entered, so switching back restores its original digits;
 editing the converted number starts a new conversion chain. The API also returns
 database decimals as strings so readback does not lose digits through a JSON
 floating-point number. Sand-body Fluid Type selects Oil Bo or Gas Bg (for
-Condensate, Wet Gas, and Dry Gas) at row 145, with explicit ratio units. See
+Condensate, Wet Gas, and Dry Gas) at row 144, with explicit ratio units. See
 [the conversion table](docs/unit_conversion_review.md) for factors and reference
 conditions.
 
@@ -65,7 +65,7 @@ conditions.
 
 Open [the interactive logic tree](docs/form_logic_tree.html) in a browser to
 inspect the current workbook hierarchy and conditional visibility. Choose
-Well type, Sand failure, Sand rate quantification, and other controlling
+Well type, Sand Control Failure, Sand rate quantification, and other controlling
 answers to see which rows appear. Hidden rows stay listed, and the tree
 shows which required fields are exempt while hidden. The API uses the same
 visibility rules and rejects answers to hidden questions.
@@ -138,13 +138,10 @@ fails if the committed output differs (the "codegen drift check") -- so a
 dictionary edit that wasn't followed by regenerating fails in CI even if
 it's forgotten locally.
 
-The generated form self-locks after a baked-in expiration date (client-side
-check, since the form has no backend to call) -- currently `2026-11-01`
-(`DEFAULT_EXPIRES_ON` in `form/generate_form.py`). To reissue the form with a
-later cutoff, regenerate with `--expires-on YYYY-MM-DD` (or update the
-`DEFAULT_EXPIRES_ON` constant and commit the regenerated
-`sand_control_form.html`); pass `--expires-on ""` for a build with no
-expiration.
+The generated form has no expiration date by default (`DEFAULT_EXPIRES_ON =
+""` in `form/generate_form.py`). To issue a copy that locks itself after a
+cutoff, regenerate with `--expires-on YYYY-MM-DD`; the browser checks that
+date on every load, since the static form has no backend to ask.
 
 Note: Alembic's `--autogenerate` cannot detect a column *rename* -- it will
 show it as a drop + an add. If a dictionary edit is truly a rename, hand-edit

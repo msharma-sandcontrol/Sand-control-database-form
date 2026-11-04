@@ -20,7 +20,7 @@ architecture" below).
 ## File inventory
 
 - `MASTER.xlsx` -- **the source of truth**. Sheet `MasterView`, one row per Parameter
-  (149 currently). Shared input to both `form/generate_form.py` and `db/codegen.py` via
+  (148 currently). Shared input to both `form/generate_form.py` and `db/codegen.py` via
   the `dictionary` package -- nothing else reads it directly.
 - `dictionary/` -- the shared parser for `MASTER.xlsx`. Owns the data model (`ParamRow`,
   `FieldSpec`), the cell-DSL parsers, and `classify_field()`. Both `form/` and `db/`
@@ -35,11 +35,10 @@ architecture" below).
   form visibility model; `docs/form_logic_tree.html` is the generated output.
   The explorer shows the current visibility rules and which required questions
   apply to the selected answers.
-- `docs/index.html` -- the hosted copy of `form/sand_control_form.html`. The Azure
-  Static Web Apps workflow publishes `docs/` on every push to `main`, behind the
-  sign-in rule in `docs/staticwebapp.config.json`. It is a plain copy, not covered
-  by the codegen drift check: after regenerating the form, copy it here to update
-  the live site.
+- `docs/index.html` -- the hosted copy of `form/sand_control_form.html`. No
+  workflow in this repo deploys it any more (the Azure Static Web Apps and
+  GitHub Pages workflows were removed). It is a plain copy, not covered by the
+  codegen drift check: after regenerating the form, copy it here.
 - `docs/unit_conversion_review.md` -- every Field/SI unit, conversion factor, and
   the liquid/gas basis rules (unit logic lives in `dictionary/units.py`).
 - `docs/devlog/` -- per-branch development logs explaining what changed, why, and
@@ -63,7 +62,7 @@ Columns, in order:
 | Column | Meaning |
 |---|---|
 | `Scope` | `Well`, `Completion Interval {id}`, or `Sand Body {id}` -- see "Scope hierarchy" below |
-| `Category` | Top-level grouping (varies per scope -- e.g. `General Information`, `Well Specific`, `Drilling`, `Completion`, `Reservoir Characterization`) |
+| `Category` | Top-level grouping (varies per scope -- e.g. `General Information`, `Well Specific Information`, `Drilling`, `Completion`, `Reservoir Characterization`) |
 | `Subcategory` | Second-level grouping within a Category |
 | `Parameter` | Field name, shown as the row label |
 | `Input Type` | `Dropdown Menu`, `Text`, `Number`, `Short Date`, or `Boolean` |
@@ -82,7 +81,7 @@ Well  (rendered once per record)
       └── Sand Body {id}  (repeatable -- a completion interval has 1+ sand bodies)
 ```
 
-Current row distribution: Well=58, Completion Interval=62, Sand Body=29.
+Current row distribution: Well=57, Completion Interval=62, Sand Body=29.
 Drilling, Completion (incl. Sand Control equipment: Completion Type, Screen Type, Gravel
 Pack details, etc.) live at Completion Interval scope, meaning multiple Sand Bodies
 within one Completion Interval share a single drilling/completion/sand-control design
@@ -149,7 +148,7 @@ segment-recovery fallback described above. Zero cells fail outright.
 
 ## Form behavior (`form/generate_form.py` output)
 
-- `General Information`, `Well Specific`, and any other Well-scope Category render once
+- `General Information`, `Well Specific Information`, and any other Well-scope Category render once
   at the top, each as a bordered "zone" with a colored header.
 - Completion Intervals render as an independently repeatable block (default cap: 10,
   `--max-completion-intervals`). Each Completion Interval block contains its own nested,
@@ -169,7 +168,7 @@ segment-recovery fallback described above. Zero cells fail outright.
 - Conditional visibility (`data-show-if`/`data-hide-if`) is evaluated per block
   instance, scoped to that instance's own DOM subtree, so cloned blocks behave
   independently.
-- `Failure Confirmation` retains the required `Sand failure` Yes/No question. The
+- `Failure Confirmation` retains the required `Sand Control Failure` Yes/No question. The
   formerly separate failure and production history sections are now one always
   visible `Sand Production & Well Performance` section. Shared questions appear
   before a failure answer; Yes reveals only the extra failure questions. One
@@ -201,7 +200,7 @@ segment-recovery fallback described above. Zero cells fail outright.
 |---|---|---|
 | Table column headers | `#203864` (white bold text) | -- |
 | `General Information` | `#FFD966` | `#FFF2CC` |
-| `Well Specific` | `#9DC3E6` | `#DEEBF7` |
+| `Well Specific Information` | `#9DC3E6` | `#DEEBF7` |
 | Completion Interval, odd instance | `#A9D18E` | `#E2F0D9` |
 | Completion Interval, even instance | `#F4B183` | `#FBE5D6` |
 | Sand Body, odd instance | `#B4A7D6` | `#EDE7F6` |
@@ -222,7 +221,7 @@ ownership:
   only credential stored; the plaintext token is shown once, at creation time.
 - `well` -- structural/audit columns (`id`, `organization_id`, `created_at`,
   `updated_at`, `submitted_at`, `raw_payload` JSONB) + one column per Well-scope
-  Parameter (58 currently), plus `schema_version` (currently 0).
+  Parameter (57 currently), plus `schema_version` (currently 0).
 - `completion_interval` -- `id`, `well_id` (FK, `ON DELETE CASCADE`), `ordinal`
   (1-based submission order, **not** used for referential integrity), timestamps + the
   ~67 Completion-Interval-scope columns (62 rows; 1 multi-number row expands into 6

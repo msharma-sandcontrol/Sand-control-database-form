@@ -29,6 +29,9 @@ PAIRS = {
     "degF": ("°C", 5 / 9, -32 * 5 / 9),
     "degrees": ("degrees", 1, 0),
     "ft": ("m", FT, 0),
+    # Bit sizes are quoted in inches worldwide, so "in" stays fixed in both
+    # systems. Other diameters use "inch" and convert to cm.
+    "in": ("in", 1, 0),
     "inch": ("cm", 2.54, 0),
     "lb/bbl": ("kg/m³", LB / BARREL, 0),
     "lbs/ft": ("kg/m", LB / FT, 0),
