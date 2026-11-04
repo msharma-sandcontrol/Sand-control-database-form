@@ -20,6 +20,7 @@ WELL_COLUMNS = [
     Column("region", Text, nullable=True, comment="Region"),
     Column("sand_control_failure", Boolean, nullable=True, comment="Sand Control Failure"),
     Column("severity_of_sand_production", Text, nullable=True, comment="Severity of sand production"),
+    Column("date_of_first_indication_of_sand_control_failure", Date, nullable=True, comment="Date of first indication of sand control failure"),
     Column("date_of_first_choke_back", Date, nullable=True, comment="Date of first choke back"),
     Column("date_of_well_shut_in_due_to_sand", Date, nullable=True, comment="Date of well shut-in due to sand"),
     Column("date_of_complete_well_failure", Date, nullable=True, comment="Date of complete well failure"),

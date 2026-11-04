@@ -22,7 +22,8 @@ Where things live:
 - ID masks: `dictionary/masks.py` (the `mask` / `same_code_as` Data Validation modifiers)
 - Form behavior: the `JS` block in `form/generate_form.py`
 - API structure checks: `backend/app/schemas/ingest.py` (`_validate_counts`)
-- Migrations: `c8d1e2f3a4b5` (wording, start-up date), `d9e0f1a2b3c4` (laterals and the rest)
+- Migrations: `c8d1e2f3a4b5` (wording, start-up date), `d9e0f1a2b3c4` (laterals and the rest),
+  `e1f2a3b4c5d6` (first-indication date)
 
 ---
 
@@ -123,7 +124,10 @@ Unicode mode).
 ## 6. Other workbook edits
 
 - Failure "Time to ..." durations (days) became `Date of first choke back`,
-  `Date of well shut-in due to sand`, `Date of complete well failure`. They
+  `Date of well shut-in due to sand`, `Date of complete well failure`, and a
+  fourth date, `Date of first indication of sand control failure`, now comes
+  first: an SME asked to record when the failure was first noticed, separately
+  from the first action taken. They
   stay optional: the old cells put `required` outside the type
   (`{"required": True, "Decimal": ...}`), which never parsed, so they were
   effectively optional already, and a failed well may never have been shut in.

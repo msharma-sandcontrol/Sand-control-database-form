@@ -20,7 +20,7 @@ architecture" below).
 ## File inventory
 
 - `MASTER.xlsx` -- **the source of truth**. Sheet `MasterView`, one row per Parameter
-  (151 currently). Shared input to both `form/generate_form.py` and `db/codegen.py` via
+  (152 currently). Shared input to both `form/generate_form.py` and `db/codegen.py` via
   the `dictionary` package -- nothing else reads it directly.
 - `dictionary/` -- the shared parser for `MASTER.xlsx`. Owns the data model (`ParamRow`,
   `FieldSpec`), the cell-DSL parsers, and `classify_field()`. Both `form/` and `db/`
@@ -84,7 +84,7 @@ Well  (rendered once per record)
            └── Sand Body {id}  (repeatable -- a completion interval has 1-10)
 ```
 
-Current row distribution: Well=55, Lateral=3, Completion Interval=62, Sand Body=31.
+Current row distribution: Well=56, Lateral=3, Completion Interval=62, Sand Body=31.
 A well that is not multilateral (`Is this a Multilateral Well?` = No) has exactly one
 lateral, its main bore; the form then hides the lateral banner and shows the
 `Lateral Details` heading as `Well Details` (`SINGLE_WELL_HEADINGS` in
@@ -250,7 +250,7 @@ ownership:
   only credential stored; the plaintext token is shown once, at creation time.
 - `well` -- structural/audit columns (`id`, `organization_id`, `created_at`,
   `updated_at`, `submitted_at`, `raw_payload` JSONB) + one column per Well-scope
-  Parameter (55 currently), plus `schema_version` (currently 0).
+  Parameter (56 currently), plus `schema_version` (currently 0).
 - `well_lateral` -- `id`, `well_id` (FK, `ON DELETE CASCADE`), `ordinal` (1-based
   submission order, **not** used for referential integrity; Lateral 1 is the main
   bore), timestamps + the Lateral-scope columns (TD MD/TVD and the interval counter).

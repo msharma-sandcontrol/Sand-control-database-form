@@ -64,7 +64,7 @@ the last value the user entered, so switching back restores its original digits;
 editing the converted number starts a new conversion chain. The API also returns
 database decimals as strings so readback does not lose digits through a JSON
 floating-point number. Sand-body Fluid Type selects Oil Bo or Gas Bg (for
-Condensate, Wet Gas, and Dry Gas) at row 145, with explicit ratio units.
+Condensate, Wet Gas, and Dry Gas) at row 146, with explicit ratio units.
 Condensate, Wet Gas, and Dry Gas also hide the oil-only Bubble Point and Rs;
 Condensate shows Dew Point Pressure and CGR instead. The SI pressure unit is
 bar. See
