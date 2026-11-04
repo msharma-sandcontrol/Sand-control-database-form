@@ -35,14 +35,21 @@ and a file saved in one opens in the other. Constraints that keep it that way:
 TABBED_CSS = """
 body.tabbed { font-family: "Segoe UI", Arial, Helvetica, sans-serif; background: #eef1f5; }
 .tabbed .tabbed-note { margin-top: .5rem; display: inline-block; background: #ffffff22; padding: .3rem .6rem; border-radius: 4px; opacity: 1; }
-.tabbed main { max-width: 1440px; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.tabbed main { max-width: 1440px; display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 1.25rem; align-items: start; }
 
 /* Form sections tree */
 #outline { position: sticky; top: 1rem; max-height: calc(100vh - 7rem); overflow: auto; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: .75rem .5rem; font-size: .88rem; }
 #outline h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: #667; margin: 0 .4rem .5rem; }
 #outline-list { list-style: none; margin: 0; padding: 0; }
-#outline-list li { margin: 1px 0; display: flex; align-items: center; }
-#outline-list .badge { margin: 0 .35rem 0 .2rem; }
+/* Each entry: name | Required column | Optional column. The columns are fixed,
+   so a red count or check is always on the left and yellow always on the right. */
+#outline-list li, .outline-cols { display: grid; grid-template-columns: minmax(0, 1fr) 3.4rem 3.4rem; align-items: center; column-gap: .15rem; }
+#outline-list li { margin: 1px 0; }
+#outline-list .cell { display: flex; justify-content: center; }
+.outline-cols { font-size: .7rem; font-weight: 600; color: #889; margin: 0 0 .3rem; }
+.outline-cols span { text-align: center; }
+.outline-cols span:nth-child(2) { color: #a1281c; }
+.outline-cols span:nth-child(3) { color: #7a5a00; }
 #outline-list .entry { flex: 1; display: flex; align-items: center; gap: .45rem; padding: .35rem .5rem; border: none; border-left: 3px solid transparent; border-radius: 0 6px 6px 0; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 #outline-list .entry:hover { background: #f2f4f7; }
 #outline-list li.current .entry { background: #e4ecf7; border-left-color: var(--header-bg); font-weight: 600; box-shadow: 0 1px 3px #20386433; }
@@ -66,7 +73,7 @@ body.tabbed { font-family: "Segoe UI", Arial, Helvetica, sans-serif; background:
 .zone-title .badge { margin-left: .6rem; font-size: .75rem; vertical-align: middle; }
 .zone-title .badge + .badge { margin-left: .3rem; }
 #outline-list .badge { padding: 0 .38rem; }
-#outline-list .badge + .badge { margin-left: 0; }
+#outline-list .badge { margin: 0; }
 
 /* Nested tabs */
 /* Tabs name the blocks, so the banners go (this beats the current form's
@@ -307,7 +314,16 @@ TABBED_JS = r"""
       text.textContent = label(item.el);
       entry.append(swatch, text);
       entry.addEventListener('click', () => goToEntry(item.el));
-      li.append(entry, ...countBadges(item.el, true, label(item.el), true));
+      // Fixed cells: required (red count or check) left, optional (yellow
+      // count, or empty when none) right.
+      const required = document.createElement('span');
+      required.className = 'cell required';
+      required.appendChild(badge(missingRows(item.el, true), label(item.el), true));
+      const optional = document.createElement('span');
+      optional.className = 'cell optional';
+      const yellow = optionalBadge(optionalRows(item.el, true), label(item.el), true);
+      if (yellow) optional.appendChild(yellow);
+      li.append(entry, required, optional);
       return li;
     }));
   }

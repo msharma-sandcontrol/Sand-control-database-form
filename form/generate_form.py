@@ -1847,6 +1847,8 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, tabbed: bool 
         css += TABBED_CSS
         body_attr = ' class="tabbed"'
         outline = ('<nav id="outline" aria-label="Form sections"><h2>Form sections</h2>'
+                   '<div class="outline-cols" aria-hidden="true"><span></span><span>Required</span>'
+                   '<span>Optional</span></div>'
                    '<div id="problems" role="status" aria-live="polite" hidden></div>'
                    '<ul id="outline-list"></ul></nav>')
         ui_js = f"\n<script>{TABBED_JS}</script>"

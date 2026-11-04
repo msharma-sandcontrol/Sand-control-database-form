@@ -37,7 +37,8 @@ architecture" below).
   Interval 1 ›`; `Well ›` for a normal well); a "Form sections" tree that follows the
   scroll position; counts on section headings, tabs, and tree entries -- red for
   required fields missing or invalid (green check when none), yellow for shown
-  optional fields still blank -- each jumping to its next such field, as do "Next
+  optional fields still blank; the tree shows them in fixed "Required" (left) and
+  "Optional" (right, empty when none) columns -- each jumping to its next such field, as do "Next
   missing field" (Alt+N) and "Next optional field" (Alt+O) in the bottom bar; and a
   list of missing fields after a failed export. The layout reuses the form's markup
   and script unchanged and only adds presentation. Unselected tabs must be hidden
@@ -479,6 +480,20 @@ See the README for the full local-dev and Docker workflows.
   guard falls back to generic `Value 1`..`Value 5` labels rather than guessing which of
   the 6 D-labels to drop. Likely a missing 6th `"Decimal": {"min": 0}` entry -- confirm
   and add it if so.
+
+- **Tabbed form slows down on very large wells** (deferred 2026-11-04; shipped as is).
+  Measured in headless Chromium: typing costs ~30 ms/key at 10 laterals, ~185 ms at 40,
+  ~1.3 s at 100, and ~2.7 s on a 40 laterals x 3 intervals x 3 sand bodies well; the
+  classic layout stays at 30-120 ms on the same wells. The cost is script time in
+  `form/tabbed_layout.py`: every keystroke rebuilds every tab and tree entry and recounts
+  each one separately (each field is re-examined once per enclosing tab/entry).
+  Separately, both layouts take ~0.5 s to add 40 laterals and ~2.3 s for 100, because
+  each added block renumbers all blocks and re-reads every unit selector (JSON.parse).
+  Planned fix: one counting pass that aggregates each field's red/yellow status up to
+  its block, lateral, and totals; update badge text in place and rebuild tabs/tree only
+  when blocks are added or removed; refresh counts shortly after typing pauses; in the
+  form script, renumber and recheck units once per counter change, and cache parsed
+  unit choices. Verify with the same stress test before and after.
 
 Resolved in the November 2026 round: the counters now size their levels and the API
 rejects a mismatch (they used to be informational only); the three `Time to ...`
