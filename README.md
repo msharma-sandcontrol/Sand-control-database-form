@@ -47,6 +47,12 @@ docker-compose.yml      local Postgres + backend, from zero on any machine
 
 See [CLAUDE.md](CLAUDE.md) for the full data model and architecture.
 
+A redesigned layout of the same form is generated alongside it as
+`form/sand_control_form_preview.html` (hosted copy: `docs/preview.html`): an
+outline sidebar with what is still missing in each block, collapsible blocks,
+and comments behind a button. Only the presentation differs; the questions,
+rules, and files are identical, so a file saved in either form opens in the other.
+
 ## Units and formation volume factors
 
 The form starts in Field units. Each convertible measurement has its own unit

@@ -70,9 +70,13 @@ from dictionary.conditional_fields import GAS_FVF, OIL_FVF, expand_conditional_r
 from dictionary.masks import mask_tokens  # noqa: E402
 from dictionary.structure import LEVELS, MULTILATERAL_PARAMETER, level_limits  # noqa: E402
 from dictionary.units import BASIS_DRIVERS, basis_driver, choices_for  # noqa: E402
+from form.preview_layout import PREVIEW_CSS, PREVIEW_SETUP_JS, PREVIEW_UI_JS  # noqa: E402
 
 DEFAULT_INPUT = REPO_ROOT / "MASTER.xlsx"
 DEFAULT_OUTPUT = Path(__file__).resolve().parent / "sand_control_form.html"
+# The redesigned layout (form/preview_layout.py), generated alongside the
+# current form from the same workbook and form script.
+DEFAULT_PREVIEW_OUTPUT = Path(__file__).resolve().parent / "sand_control_form_preview.html"
 # Optional expiration for a form emailed out as a standalone file. When set
 # (here or with --expires-on YYYY-MM-DD), the date is baked in at generation
 # time and checked by the browser on every load, which then locks the form.
@@ -1725,7 +1729,9 @@ JS = r"""
 """
 
 
-def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON) -> str:
+def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, preview: bool = False) -> str:
+    """The current form, or with preview=True the redesigned layout: the same
+    markup and form script plus the presentation layer in preview_layout.py."""
     well_html = render_well_section(model)
     lateral_template_html = render_lateral_template(model)
     js = (JS.replace("__SCHEMA_VERSION__", str(CURRENT_SCHEMA_VERSION))
@@ -1745,15 +1751,31 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON) -> str:
     else:
         validity_notice = ""
 
+    title = "Sand Control Failure Record Form (Producer Wells)"
+    css, body_attr, preview_note, outline, setup_js, ui_js = CSS, "", "", "", "", ""
+    if preview:
+        title += " — Layout Preview"
+        css += PREVIEW_CSS
+        body_attr = ' class="preview"'
+        preview_note = ('<p class="preview-note">Layout preview: the questions, rules, and files are the same as '
+                        'in the current form, and a file saved in either one opens in the other.</p>')
+        outline = ('<nav id="outline" aria-label="Form outline"><h2>Outline</h2>'
+                   '<div class="outline-actions"><button type="button" id="expand-all">Expand all</button>'
+                   '<button type="button" id="collapse-all">Collapse all</button></div>'
+                   '<div id="problems" role="status" aria-live="polite" hidden></div>'
+                   '<ul id="outline-list"></ul></nav>')
+        setup_js = f"<script>{PREVIEW_SETUP_JS}</script>\n"
+        ui_js = f"\n<script>{PREVIEW_UI_JS}</script>"
+
     return f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sand Control Failure Record Form (Producer Wells)</title>
-<style>{CSS}</style>
+<title>{title}</title>
+<style>{css}</style>
 </head>
-<body>
+<body{body_attr}>
 <header class="page-header">
   <h1>Sand Control Failure Record Form &mdash; Producer Wells</h1>
   <p>Import a saved file, save an unfinished draft, or export a completed record. JSON and CSV are available for both saves. Hover the <strong>?</strong> icon next to a field for guidance.</p>
@@ -1762,14 +1784,14 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON) -> str:
     <small>Well type (or a Sand Body's Fluid Type) sets whether sand rates and PI are liquid- or gas-based; changing it clears numbers entered in the other basis. Standard gas volumes use 60°F and 14.73 psia on both sides.</small>
   </div>
   <p id="basis-change-status" role="status" aria-live="polite"></p>
-  {validity_notice}
+  {preview_note}{validity_notice}
   <p id="expired-banner" class="expired-banner" style="display:none;">
     This form has expired and is no longer accepting submissions. Please contact your Sand Control Failure DB
     program contact for a current version of the form.
   </p>
 </header>
 <main>
-  <form id="sand-form" onsubmit="return false;">
+  {outline}<form id="sand-form" onsubmit="return false;">
     {well_html}
     <div id="laterals-container"></div>
     {lateral_template_html}
@@ -1794,7 +1816,7 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON) -> str:
   </details>
   <p id="import-status" role="status" aria-live="polite"></p>
 </div>
-<script>{js}</script>
+{setup_js}<script>{js}</script>{ui_js}
 </body>
 </html>
 """
@@ -1804,6 +1826,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("input", nargs="?", default=DEFAULT_INPUT, help="Path to the dictionary xlsx file")
     parser.add_argument("output", nargs="?", default=DEFAULT_OUTPUT, help="Path to write the generated HTML form")
+    parser.add_argument("--preview-output", default=DEFAULT_PREVIEW_OUTPUT,
+                        help="Path to write the redesigned layout preview of the same form")
     parser.add_argument("--expires-on", default=DEFAULT_EXPIRES_ON,
                          help="ISO date (YYYY-MM-DD) after which the generated form locks itself "
                               "(client-side check baked in at generation time). Pass \"\" for no expiration.")
@@ -1824,13 +1848,15 @@ def main() -> None:
 
     output_path = Path(args.output)
     output_path.write_text(html_out, encoding="utf-8")
+    preview_path = Path(args.preview_output)
+    preview_path.write_text(render_html(model, expires_on=args.expires_on, preview=True), encoding="utf-8")
     well_subcats = sum(len(v) for v in model["well"].values())
     lateral_subcats = sum(len(v) for v in model["lateral"].values())
     completion_subcats = sum(len(v) for v in model["completion"].values())
     sand_body_subcats = sum(len(v) for v in model["sand_body"].values())
     print(f"Wrote {output_path} ({len(expand_conditional_rows(rows))} effective parameters: "
           f"{well_subcats} well-scope, {lateral_subcats} lateral-scope, {completion_subcats} completion-interval-scope, "
-          f"{sand_body_subcats} sand-body-scope subcategories).")
+          f"{sand_body_subcats} sand-body-scope subcategories) and the layout preview {preview_path}.")
 
 
 if __name__ == "__main__":
