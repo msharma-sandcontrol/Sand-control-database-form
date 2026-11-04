@@ -53,7 +53,8 @@ already rejected non-ISO dates, so the form now matches it.
 the required `Number of laterals` (2-100, the main bore counts as Lateral 1).
 Every well now has the hierarchy Well -> Lateral -> Completion Interval ->
 Sand Body; a well that is not multilateral has exactly one lateral and the
-form hides its banner, so it looks as before. TD (MD and TVD) and `Number of
+form hides its banner and titles its details "Well Details" instead of
+"Lateral Details" (display only; files and the API keep `Lateral Details`). TD (MD and TVD) and `Number of
 Completion Intervals` moved from the well into each lateral's `Lateral
 Details`, because each branch has its own TD.
 

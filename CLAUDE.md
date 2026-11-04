@@ -86,8 +86,9 @@ Well  (rendered once per record)
 
 Current row distribution: Well=55, Lateral=3, Completion Interval=62, Sand Body=31.
 A well that is not multilateral (`Is this a Multilateral Well?` = No) has exactly one
-lateral, its main bore; the form then hides the lateral banner, so the page reads as
-lateral details followed by completion intervals. For a multilateral well the main
+lateral, its main bore; the form then hides the lateral banner and shows the
+`Lateral Details` heading as `Well Details` (`SINGLE_WELL_HEADINGS` in
+`form/generate_form.py`; display only, the saved key is unchanged). For a multilateral well the main
 bore counts as Lateral 1. Each lateral carries its own TD (MD and TVD).
 Drilling, Completion (incl. Sand Control equipment: Completion Type, Screen Type, Gravel
 Pack details, etc.) live at Completion Interval scope, meaning multiple Sand Bodies

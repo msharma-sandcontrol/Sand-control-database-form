@@ -274,21 +274,34 @@ def render_field_row(row: ParamRow, param_show: dict, param_hide: dict) -> str:
             f'{control}{unit_html}{action_html}{comment_html}</label>')
 
 
-def render_subcategory(category: str, subcategory: str, rows: list[ParamRow], model: dict) -> str:
+# Lateral-scope headings as shown for a well that is not multilateral. Its
+# one lateral is simply the well, so "Lateral" would only confuse; the saved
+# Subcategory key is unchanged. A heading missing here shows as written.
+SINGLE_WELL_HEADINGS = {"Lateral Details": "Well Details"}
+
+
+def render_subcategory(category: str, subcategory: str, rows: list[ParamRow], model: dict,
+                       single_well_heading: str | None = None) -> str:
     field_rows = "".join(render_field_row(r, model["param_show"], model["param_hide"]) for r in rows)
+    heading = esc(subcategory)
+    if single_well_heading:
+        heading = (f'<span class="multi-only">{heading}</span>'
+                   f'<span class="single-only">{esc(single_well_heading)}</span>')
     attrs = build_show_hide_attr(category, subcategory, model["subcat_show"], model["subcat_hide"])
     return (f'<section class="subcategory" data-category="{esc(category)}" '
             f'data-subcategory="{esc(subcategory)}"{attrs}>'
-            f'<h3 class="subcat-title">{esc(subcategory)}</h3>'
+            f'<h3 class="subcat-title">{heading}</h3>'
             f'<div class="field-grid">{field_rows}</div></section>')
 
 
-def render_flat_groups(grouped: dict[str, dict[str, list[ParamRow]]], model: dict) -> str:
+def render_flat_groups(grouped: dict[str, dict[str, list[ParamRow]]], model: dict,
+                       single_well_headings: dict[str, str] | None = None) -> str:
     """Render subcategory sections with no category heading, in source order."""
     parts = []
     for category, subcats in grouped.items():
         for subcategory, rows in subcats.items():
-            parts.append(render_subcategory(category, subcategory, rows, model))
+            parts.append(render_subcategory(category, subcategory, rows, model,
+                                            (single_well_headings or {}).get(subcategory)))
     return "".join(parts)
 
 
@@ -341,7 +354,7 @@ def render_completion_template(model: dict) -> str:
 def render_lateral_template(model: dict) -> str:
     """A well that is not multilateral shows its single lateral without the
     banner, so the form reads as before: lateral details, then intervals."""
-    own_groups = render_flat_groups(model["lateral"], model)
+    own_groups = render_flat_groups(model["lateral"], model, SINGLE_WELL_HEADINGS)
     completion_tpl = render_completion_template(model)
     return (
         '<template id="lateral-template">'
@@ -404,8 +417,9 @@ main { max-width: 1280px; margin: 1.5rem auto; padding: 0 1rem; }
 .lateral-instance.interval-even > .own-fields .subcat-title { background: var(--lat-even-header); }
 .lateral-instance.interval-odd > .own-fields .field-row { background: var(--lat-odd-row); }
 .lateral-instance.interval-even > .own-fields .field-row { background: var(--lat-even-row); }
-.lateral-prefix { display: none; }
-#sand-form.multi-lateral .lateral-prefix { display: inline; }
+.lateral-prefix, .multi-only { display: none; }
+#sand-form.multi-lateral .lateral-prefix, #sand-form.multi-lateral .multi-only { display: inline; }
+#sand-form.multi-lateral .single-only { display: none; }
 .nest-heading { margin: 1.25rem 0 .75rem; font-size: 1.1rem; }
 .sand-body-nest .nest-heading { margin: 0 0 .6rem; font-size: .95rem; }
 
