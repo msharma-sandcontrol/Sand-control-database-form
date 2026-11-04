@@ -48,12 +48,12 @@ docker-compose.yml      local Postgres + backend, from zero on any machine
 See [CLAUDE.md](CLAUDE.md) for the full data model and architecture.
 
 A redesigned layout of the same form is generated alongside it as
-`form/sand_control_form_preview.html` (hosted copy: `docs/preview.html`). A
-tree on the left lists the well sections and every Lateral, Completion Interval,
-and Sand Body with how many fields each still needs; the right side shows only
-the selected one, with a clickable path and Previous/Next buttons. Only the
-presentation differs; the questions, rules, and files are identical, so a file
-saved in either form opens in the other.
+`form/sand_control_form_preview.html` (hosted copy: `docs/preview.html`). It is
+still one page, but Laterals, Completion Intervals, and Sand Bodies are nested
+tabs that show what is still missing in each; a "Form sections" tree follows
+your position; and "Next missing field" (or Alt+N) jumps through whatever still
+needs an answer. Only the presentation differs; the questions, rules, and files
+are identical, so a file saved in either form opens in the other.
 
 ## Units and formation volume factors
 

@@ -1752,7 +1752,7 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, preview: bool
         validity_notice = ""
 
     title = "Sand Control Failure Record Form (Producer Wells)"
-    css, body_attr, preview_note, outline, pane_open, pane_close, ui_js = CSS, "", "", "", "", "", ""
+    css, body_attr, preview_note, outline, ui_js = CSS, "", "", "", ""
     if preview:
         title += " — Layout Preview"
         css += PREVIEW_CSS
@@ -1762,9 +1762,6 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, preview: bool
         outline = ('<nav id="outline" aria-label="Form sections"><h2>Form sections</h2>'
                    '<div id="problems" role="status" aria-live="polite" hidden></div>'
                    '<ul id="outline-list"></ul></nav>')
-        pane_open = '<div class="pane"><div id="pane-head"><nav id="pane-crumbs" aria-label="Current section"></nav></div>'
-        pane_close = ('<div id="pane-foot"><button type="button" id="prev-item"></button>'
-                      '<button type="button" id="next-item"></button></div></div>')
         ui_js = f"\n<script>{PREVIEW_UI_JS}</script>"
 
     return f"""<!doctype html>
@@ -1791,11 +1788,11 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, preview: bool
   </p>
 </header>
 <main>
-  {outline}{pane_open}<form id="sand-form" onsubmit="return false;">
+  {outline}<form id="sand-form" onsubmit="return false;">
     {well_html}
     <div id="laterals-container"></div>
     {lateral_template_html}
-  </form>{pane_close}
+  </form>
 </main>
 <div class="export-bar">
   <input type="file" id="import-file" accept=".json,.csv,application/json,text/csv" hidden>
