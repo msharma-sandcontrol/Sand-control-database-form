@@ -41,7 +41,7 @@ jobs:
           python -m db.codegen
           python form/generate_form.py
           python docs/generate_form_logic_tree.py
-          git diff --exit-code -- db/generated form/sand_control_form.html form/sand_control_form_preview.html docs/form_logic_tree.html
+          git diff --exit-code -- db/generated form/sand_control_form.html form/sand_control_form_classic.html docs/form_logic_tree.html
 
       - name: Lint
         run: ruff check .

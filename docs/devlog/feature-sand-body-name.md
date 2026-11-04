@@ -155,3 +155,28 @@ Unicode mode).
   <= complete failure)?
 - Schema version 0 is still mutable. When it is frozen as version 1, add a test
   that fails if the registry changes without a version bump.
+
+## 9. 2026-11-04: tabbed layout made official, Apply removed
+
+The advisor approved the tabbed layout, so it is now the official form
+(`form/sand_control_form.html`, `docs/index.html`). The long-page layout is
+still generated as `form/sand_control_form_classic.html` for reference. The
+old `..._preview.html` and `docs/preview.html` files are gone.
+
+- **Yellow counts.** Next to each red count (or green check): shown optional
+  questions still blank. Rule-hidden questions, counters, unit choices, and
+  comments do not count; a multi-number field is answered once any value is
+  filled. Every count jumps to its next field, and "Next optional field"
+  (Alt+O) joins "Next missing field" (Alt+N). Only 23 of 153 questions are
+  required, so the yellow numbers are large by design.
+- **Tab captions** name the owner: `Lateral 2 ›` over its intervals,
+  `Lateral 2 › Completion Interval 1 ›` over its sand bodies; for a normal well
+  `Well ›` and `Completion Interval 1 ›`.
+- **Apply removed.** The three counters (lines 007, 059, 121) apply when you
+  leave the box, press Enter, or click the arrows. *Rejected:* applying on every
+  keystroke, which would build 1 block on the way to typing 12. *Found in
+  testing:* blocking Enter's default leaves the browser thinking nothing changed,
+  so stepping back to the entry value fired no change event; leaving the box now
+  always applies, and Enter resets the box's committed value.
+- The counter tooltips in `MASTER.xlsx` no longer say "Press Apply".
+

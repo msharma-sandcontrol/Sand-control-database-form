@@ -1,8 +1,9 @@
-"""The redesigned ("preview") layout of the intake form.
+"""The tabbed layout of the intake form -- the official form since 2026-11-04.
 
-The preview is generated from the same workbook, markup, and form script as
-the current form; this module only adds presentation on top. It stays one
-scrolling page, with three additions:
+It is generated from the same workbook, markup, and form script as the
+classic layout (form/sand_control_form_classic.html, kept for reference); this
+module only adds presentation on top. It stays one scrolling page, with three
+additions:
 
 - Nested tabs for the repeated blocks. Laterals (multilateral wells only),
   the Completion Intervals of the selected lateral, and the Sand Bodies of
@@ -11,14 +12,16 @@ scrolling page, with three additions:
   block and everything under it.
 - A "Form sections" tree on the left that follows the scroll position and
   jumps to any section or block (switching tabs as needed).
-- Jumping to the next missing field: a button in the always-visible bottom
-  bar (and Alt+N) for the whole form, and the counts on section headings,
-  tabs, and tree entries for that part of the form. A jump continues from
+- Counts on section headings, tabs, and tree entries: red for required
+  fields still missing or invalid (green check when none), yellow for shown
+  optional fields still blank. Each count jumps to its next such field, as do
+  "Next missing field" (Alt+N) and "Next optional field" (Alt+O) in the
+  always-visible bottom bar. A jump continues from
   the field you are in, wraps at the end, opens the right tabs, and flashes
   the field.
 
-Rules, units, Apply, save and import behave identically in both forms, and a
-file saved in one opens in the other. Constraints that keep it that way:
+Rules, units, counters, save and import behave identically in both layouts,
+and a file saved in one opens in the other. Constraints that keep it that way:
 
 - Unselected tabs are hidden with a CSS class, never an inline
   `display:none`. The form script treats inline-hidden fields as rule-hidden
@@ -29,10 +32,10 @@ file saved in one opens in the other. Constraints that keep it that way:
   which would fire `invalid` events outside an export.
 """
 
-PREVIEW_CSS = """
-body.preview { font-family: "Segoe UI", Arial, Helvetica, sans-serif; background: #eef1f5; }
-.preview .preview-note { margin-top: .5rem; display: inline-block; background: #ffffff22; padding: .3rem .6rem; border-radius: 4px; opacity: 1; }
-.preview main { max-width: 1440px; display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+TABBED_CSS = """
+body.tabbed { font-family: "Segoe UI", Arial, Helvetica, sans-serif; background: #eef1f5; }
+.tabbed .tabbed-note { margin-top: .5rem; display: inline-block; background: #ffffff22; padding: .3rem .6rem; border-radius: 4px; opacity: 1; }
+.tabbed main { max-width: 1440px; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 1.25rem; align-items: start; }
 
 /* Form sections tree */
 #outline { position: sticky; top: 1rem; max-height: calc(100vh - 7rem); overflow: auto; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: .75rem .5rem; font-size: .88rem; }
@@ -58,51 +61,58 @@ body.preview { font-family: "Segoe UI", Arial, Helvetica, sans-serif; background
 .badge.done { background: #e6f4ea; color: #1e6b34; }
 .badge.todo { background: #fdecea; color: #a1281c; cursor: pointer; }
 .badge.todo:hover { background: #a1281c; color: #fff; }
+.badge.optional { background: #fff1c2; color: #7a5a00; cursor: pointer; }
+.badge.optional:hover { background: #b38600; color: #fff; }
 .zone-title .badge { margin-left: .6rem; font-size: .75rem; vertical-align: middle; }
+.zone-title .badge + .badge { margin-left: .3rem; }
+#outline-list .badge { padding: 0 .38rem; }
+#outline-list .badge + .badge { margin-left: 0; }
 
 /* Nested tabs */
 /* Tabs name the blocks, so the banners go (this beats the current form's
    multilateral rule that shows the lateral banner). */
-.preview #sand-form .interval-instance > .interval-banner { display: none; }
-.preview .tab-hidden { display: none !important; }
+.tabbed #sand-form .interval-instance > .interval-banner { display: none; }
+.tabbed .tab-hidden { display: none !important; }
 .tablist { display: flex; flex-wrap: wrap; gap: .3rem; align-items: flex-end; border-bottom: 3px solid var(--tab-line, var(--border)); margin: .5rem 0 0; padding: 0 .25rem; }
-.tablist .tablist-label { font-size: .78rem; font-weight: 700; color: #556; text-transform: uppercase; letter-spacing: .05em; margin: 0 .5rem .45rem 0; }
+.tablist .tablist-label { font-size: .85rem; font-weight: 700; color: #2b3a55; margin: 0 .5rem .45rem 0; white-space: nowrap; }
 .tab { display: flex; align-items: center; gap: .45rem; padding: .45rem .85rem; border: 1px solid var(--border); border-bottom: none; border-radius: 7px 7px 0 0; background: #f7f8fa; color: #445; font: inherit; font-size: .88rem; cursor: pointer; border-top: 3px solid var(--tab-color); }
 .tab:hover { background: #fff; }
 .tab:focus-visible { outline: 2px solid var(--header-bg); outline-offset: 1px; }
 .tab[aria-selected="true"] { background: var(--tab-color); color: var(--banner-text); font-weight: 700; padding-bottom: .55rem; }
-.preview #laterals-container > .lateral-instance, .preview .completion-instance, .preview .sand-body-instance { border-top-left-radius: 0; border-top-right-radius: 0; margin-top: 0; }
-.preview #sand-form.multi-lateral .lateral-instance { padding: 0 .75rem .75rem; }
-.preview .completion-nest > .nest-heading, .preview .sand-body-nest > .nest-heading { display: none; }
-.preview .sand-body-nest { border-left: none; padding: .25rem .75rem .75rem; margin-top: .25rem; }
-.preview .completion-nest { margin-top: 1rem; }
+.tabbed #laterals-container > .lateral-instance, .tabbed .completion-instance, .tabbed .sand-body-instance { border-top-left-radius: 0; border-top-right-radius: 0; margin-top: 0; }
+.tabbed #sand-form.multi-lateral .lateral-instance { padding: 0 .75rem .75rem; }
+.tabbed .completion-nest > .nest-heading, .tabbed .sand-body-nest > .nest-heading { display: none; }
+.tabbed .sand-body-nest { border-left: none; padding: .25rem .75rem .75rem; margin-top: .25rem; }
+.tabbed .completion-nest { margin-top: 1rem; }
 #sand-form:not(.multi-lateral) > .tablist.for-laterals { display: none; }
 #sand-form > .tablist.for-laterals { margin-top: 1.25rem; }
 
 /* A field reached by a jump flashes briefly. */
 @keyframes jump-flash { from { box-shadow: inset 0 0 0 3px #e0a100; background: #fff6d5; } to { box-shadow: inset 0 0 0 3px transparent; } }
-.preview .field-row.jumped { animation: jump-flash 1.6s ease-out; }
+.tabbed .field-row.jumped { animation: jump-flash 1.6s ease-out; }
 
-/* Next missing field, in the bottom bar */
-#next-missing { margin-right: auto; display: flex; align-items: center; gap: .5rem; background: #fff !important; color: var(--header-bg) !important; border: 2px solid var(--header-bg) !important; }
-#next-missing .badge { font-size: .78rem; }
-#next-missing kbd { font-size: .72rem; color: #667; border: 1px solid #ccd; border-radius: 3px; padding: 0 .3rem; background: #f7f8fa; }
+/* Next missing / next optional field, at the left of the bottom bar */
+#next-missing, #next-optional { display: flex; align-items: center; gap: .5rem; background: #fff !important; color: var(--header-bg) !important; border: 2px solid var(--header-bg) !important; }
+#next-optional { margin-right: auto; border-color: #b38600 !important; }
+#next-missing:disabled, #next-optional:disabled { opacity: .55; cursor: default; }
+#next-missing .badge, #next-optional .badge { font-size: .78rem; }
+#next-missing kbd, #next-optional kbd { font-size: .72rem; color: #667; border: 1px solid #ccd; border-radius: 3px; padding: 0 .3rem; background: #f7f8fa; }
 
 /* Shorter answer boxes; the comment box stays as in the current form. */
-.preview .field-row { grid-template-columns: minmax(220px, 1.3fr) minmax(170px, 300px) 8.5rem 4.75rem minmax(150px, 1fr); }
-.preview .field-row:has(.multi-number) { grid-template-columns: minmax(220px, 1.3fr) minmax(300px, 420px) 8.5rem 4.75rem minmax(150px, 1fr); }
-.preview .field-name { font-size: .9rem; }
-.preview .subcat-title { font-size: .9rem; }
-.preview .zone, .preview .interval-instance { scroll-margin-top: 4rem; }
-.preview .tablist { scroll-margin-top: 1rem; }
+.tabbed .field-row { grid-template-columns: minmax(220px, 1.3fr) minmax(170px, 300px) 8.5rem 4.75rem minmax(150px, 1fr); }
+.tabbed .field-row:has(.multi-number) { grid-template-columns: minmax(220px, 1.3fr) minmax(300px, 420px) 8.5rem 4.75rem minmax(150px, 1fr); }
+.tabbed .field-name { font-size: .9rem; }
+.tabbed .subcat-title { font-size: .9rem; }
+.tabbed .zone, .tabbed .interval-instance { scroll-margin-top: 4rem; }
+.tabbed .tablist { scroll-margin-top: 1rem; }
 
 @media (max-width: 900px) {
-  .preview main { grid-template-columns: 1fr; }
+  .tabbed main { grid-template-columns: 1fr; }
   #outline { position: static; max-height: none; }
 }
 """
 
-PREVIEW_UI_JS = r"""
+TABBED_JS = r"""
 (function () {
   const form = document.getElementById('sand-form');
   const wellSection = document.getElementById('well-section');
@@ -148,11 +158,26 @@ PREVIEW_UI_JS = r"""
     return Array.from(scope.querySelectorAll('.field-row'))
       .filter((row) => (!ownOnly || entryOf(row) === scope) && rowNeedsAttention(row));
   }
+  // An optional question that is shown and still blank. A rule-hidden
+  // question has disabled controls and does not count, nor do counters (they
+  // are structure), unit choices, or comments. A multi-number field counts as
+  // answered once any of its values is filled in.
+  function rowOptionalBlank(row) {
+    const control = row.querySelector('[data-kind]');
+    if (!control || control.matches('[data-counter]')) return false;
+    const inputs = control.matches('input, select, textarea') ? [control] : Array.from(control.querySelectorAll('input'));
+    if (!inputs.length || inputs.some((input) => input.disabled || input.required)) return false;
+    return inputs.every((input) => input.value === '');
+  }
+  function optionalRows(scope, ownOnly) {
+    return Array.from(scope.querySelectorAll('.field-row'))
+      .filter((row) => (!ownOnly || entryOf(row) === scope) && rowOptionalBlank(row));
+  }
   function badge(rows, title, compact) {
     const count = rows.length;
     const el = document.createElement(count ? 'button' : 'span');
     el.className = 'badge ' + (count ? 'todo' : 'done');
-    el.textContent = count ? (compact ? count + ' ↓' : count + ' to fill ↓') : '✓';
+    el.textContent = count ? (compact ? String(count) : count + ' to fill ↓') : '✓';
     el.title = count ? title + ': ' + count + ' field(s) still need an answer or a fix. Click to go to the next one.' :
       title + ': nothing missing';
     if (count) {
@@ -160,6 +185,22 @@ PREVIEW_UI_JS = r"""
       el.addEventListener('click', (event) => { event.stopPropagation(); event.preventDefault(); jumpTo(rows); });
     }
     return el;
+  }
+  // The yellow count of blank optional fields; nothing when there are none.
+  function optionalBadge(rows, title, compact) {
+    if (!rows.length) return null;
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'badge optional';
+    el.textContent = compact ? String(rows.length) : rows.length + ' optional ↓';
+    el.title = title + ': ' + rows.length + ' optional field(s) still blank. Click to go to the next one.';
+    el.addEventListener('click', (event) => { event.stopPropagation(); event.preventDefault(); jumpTo(rows); });
+    return el;
+  }
+  // Red (or the green check) and, when any, yellow -- for one scope.
+  function countBadges(scope, ownOnly, title, compact) {
+    return [badge(missingRows(scope, ownOnly), title, compact),
+      optionalBadge(optionalRows(scope, ownOnly), title, compact)].filter(Boolean);
   }
 
   // ---- tabs ----
@@ -179,23 +220,25 @@ PREVIEW_UI_JS = r"""
     for (let node = block; node; node = parentBlock(node)) chosen.set(node.parentElement, node);
     render();
   }
-  function tabStripFor(container, level, cssClass) {
+  function tabStripFor(container, cssClass) {
     let strip = container.previousElementSibling;
     if (!strip || !strip.classList.contains('tablist')) {
       strip = document.createElement('div');
       strip.className = 'tablist ' + cssClass;
       strip.setAttribute('role', 'tablist');
-      strip.setAttribute('aria-label', level);
       container.before(strip); // beside the container, never inside it
     }
     return strip;
   }
-  function renderTabs(container, level, plural, cssClass) {
-    const strip = tabStripFor(container, plural, cssClass);
+  // `captionText` names whose blocks these are ("Lateral 2 ›"), so the strip
+  // reads as a path into its tabs; `ariaLabel` says the same for screen readers.
+  function renderTabs(container, cssClass, captionText, ariaLabel) {
+    const strip = tabStripFor(container, cssClass);
+    strip.setAttribute('aria-label', ariaLabel);
     const current = selectedIn(container);
     const caption = document.createElement('span');
     caption.className = 'tablist-label';
-    caption.textContent = plural;
+    caption.textContent = captionText;
     const tabs = Array.from(container.children).map((block) => {
       block.classList.toggle('tab-hidden', block !== current);
       // A focusable element, not a <button>: the tab holds a count button,
@@ -209,7 +252,7 @@ PREVIEW_UI_JS = r"""
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(block); }
       });
       tab.style.setProperty('--tab-color', blockColor(block));
-      tab.append(document.createTextNode(label(block)), badge(missingRows(block, false), label(block)));
+      tab.append(document.createTextNode(label(block)), ...countBadges(block, false, label(block)));
       tab.addEventListener('click', () => choose(block));
       return tab;
     });
@@ -217,11 +260,18 @@ PREVIEW_UI_JS = r"""
     strip.replaceChildren(caption, ...tabs);
     return current;
   }
+  // Captions: "Laterals"; then "Lateral 2 ›" over its intervals ("Well ›"
+  // for a normal well, which has no laterals to tell apart); then "Lateral 2 ›
+  // Completion Interval 1 ›" over its sand bodies (no lateral for a normal well).
   function renderAllTabs() {
-    renderTabs(lateralsContainer, 'Lateral', 'Laterals', 'for-laterals');
-    lateralBlocks().forEach((each) => {
-      renderTabs(completionContainer(each), 'Completion Interval', 'Completion Intervals', 'for-intervals');
-      completionBlocks(each).forEach((ci) => renderTabs(sandBodyContainer(ci), 'Sand Body', 'Sand Bodies', 'for-sand-bodies'));
+    renderTabs(lateralsContainer, 'for-laterals', 'Laterals', 'Laterals');
+    lateralBlocks().forEach((lateral) => {
+      const owner = multi() ? 'Lateral ' + lateral.dataset.intervalIndex : 'Well';
+      renderTabs(completionContainer(lateral), 'for-intervals', owner + ' ›', 'Completion Intervals of ' + owner);
+      completionBlocks(lateral).forEach((ci) => {
+        const path = (multi() ? owner + ' › ' : '') + 'Completion Interval ' + ci.dataset.intervalIndex;
+        renderTabs(sandBodyContainer(ci), 'for-sand-bodies', path + ' ›', 'Sand Bodies of ' + path);
+      });
     });
   }
 
@@ -257,7 +307,7 @@ PREVIEW_UI_JS = r"""
       text.textContent = label(item.el);
       entry.append(swatch, text);
       entry.addEventListener('click', () => goToEntry(item.el));
-      li.append(entry, badge(missingRows(item.el, true), label(item.el), true));
+      li.append(entry, ...countBadges(item.el, true, label(item.el), true));
       return li;
     }));
   }
@@ -321,43 +371,53 @@ PREVIEW_UI_JS = r"""
     const block = row.closest('.interval-instance');
     if (block) choose(block);
     row.scrollIntoView({ block: 'center' });
-    const control = Array.from(row.querySelectorAll('input, select, textarea'))
-      .find((c) => !c.classList.contains('field-comment') && !c.disabled && !c.validity.valid);
-    control?.focus({ preventScroll: true });
+    // An invalid control if there is one (missing or wrong), otherwise the
+    // field's first answer box (a blank optional field).
+    const controls = Array.from(row.querySelectorAll('input, select, textarea'))
+      .filter((c) => !c.classList.contains('field-comment') && !c.classList.contains('unit-select') && !c.disabled);
+    (controls.find((c) => !c.validity.valid) || controls[0])?.focus({ preventScroll: true });
     lastRow = row;
     row.classList.remove('jumped');
     void row.offsetWidth; // restart the flash if the same row is reached again
     row.classList.add('jumped');
   }
-  const nextButton = document.createElement('button');
-  nextButton.type = 'button';
-  nextButton.id = 'next-missing';
-  nextButton.title = 'Go to the next field that still needs an answer (Alt+N)';
+  function jumpButton(id, title) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = id;
+    button.title = title;
+    return button;
+  }
+  const nextButton = jumpButton('next-missing', 'Go to the next required field still missing or invalid (Alt+N)');
+  const nextOptionalButton = jumpButton('next-optional', 'Go to the next optional field still blank (Alt+O)');
   nextButton.addEventListener('click', () => jumpTo(missingRows(form, false)));
-  document.querySelector('.export-bar').prepend(nextButton);
+  nextOptionalButton.addEventListener('click', () => jumpTo(optionalRows(form, false)));
+  document.querySelector('.export-bar').prepend(nextButton, nextOptionalButton);
   document.addEventListener('keydown', (event) => {
-    if (event.altKey && !event.ctrlKey && !event.metaKey && event.code === 'KeyN') {
-      event.preventDefault();
-      jumpTo(missingRows(form, false));
-    }
+    if (!event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.code === 'KeyN') { event.preventDefault(); jumpTo(missingRows(form, false)); }
+    if (event.code === 'KeyO') { event.preventDefault(); jumpTo(optionalRows(form, false)); }
   });
-  function renderNextButton() {
-    const count = missingRows(form, false).length;
+  function fillJumpButton(button, count, cssClass, label, doneLabel, keys) {
     const kbd = document.createElement('kbd');
-    kbd.textContent = 'Alt+N';
+    kbd.textContent = keys;
     const counter = document.createElement('span');
-    counter.className = 'badge ' + (count ? 'todo' : 'done');
+    counter.className = 'badge ' + (count ? cssClass : 'done');
     counter.textContent = count ? String(count) : '✓';
-    nextButton.replaceChildren(document.createTextNode(count ? 'Next missing field' : 'All required fields filled'), counter, kbd);
-    nextButton.disabled = !count;
+    button.replaceChildren(document.createTextNode(count ? label : doneLabel), counter, kbd);
+    button.disabled = !count;
+  }
+  function renderNextButton() {
+    fillJumpButton(nextButton, missingRows(form, false).length, 'todo', 'Next missing field', 'All required fields filled', 'Alt+N');
+    fillJumpButton(nextOptionalButton, optionalRows(form, false).length, 'optional', 'Next optional field', 'No optional fields left', 'Alt+O');
   }
 
   // Each well section heading shows its own count, which also jumps.
   function renderZoneBadges() {
     zones.forEach((zone) => {
       const title = zone.querySelector('.zone-title');
-      title.querySelector('.badge')?.remove();
-      title.appendChild(badge(missingRows(zone, true), zoneNames.get(zone)));
+      title.querySelectorAll('.badge').forEach((el) => el.remove());
+      title.append(...countBadges(zone, true, zoneNames.get(zone)));
     });
   }
 
@@ -420,8 +480,7 @@ PREVIEW_UI_JS = r"""
     requestAnimationFrame(() => { scheduled = false; render(); spy(); });
   }
   ['input', 'change'].forEach((type) => form.addEventListener(type, schedule));
-  form.addEventListener('click', (event) => { if (event.target.closest('.apply-count-btn')) schedule(); });
-  // Import, Apply and the multilateral switch add or remove blocks without
+  // Import, counters and the multilateral switch add or remove blocks without
   // input events; watch for exactly that. Rebuilding tabs adds buttons, not
   // blocks, so it does not feed back into this observer.
   new MutationObserver((records) => {

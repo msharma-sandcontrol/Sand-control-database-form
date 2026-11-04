@@ -22,7 +22,7 @@ See CLAUDE.md for the full data model. Key points this generator relies on:
   "Sand Body {id}" -- a well has one or more Laterals (just its main bore
   unless it is multilateral), each with one or more Completion Intervals,
   each with one or more Sand Bodies. The form renders three nested,
-  repeatable block levels, each sized by its counter's Apply button (see
+  repeatable block levels, each sized by its counter field (see
   dictionary/structure.py).
 - `Data Validation`, `Affected Subcategory` and `Affected Parameter` cells are
   written as Python-literal-safe text (parsed with ast.literal_eval, tolerant
@@ -70,13 +70,14 @@ from dictionary.conditional_fields import GAS_FVF, OIL_FVF, expand_conditional_r
 from dictionary.masks import mask_tokens  # noqa: E402
 from dictionary.structure import LEVELS, MULTILATERAL_PARAMETER, level_limits  # noqa: E402
 from dictionary.units import BASIS_DRIVERS, basis_driver, choices_for  # noqa: E402
-from form.preview_layout import PREVIEW_CSS, PREVIEW_UI_JS  # noqa: E402
+from form.tabbed_layout import TABBED_CSS, TABBED_JS  # noqa: E402
 
 DEFAULT_INPUT = REPO_ROOT / "MASTER.xlsx"
+# The official form uses the tabbed layout (form/tabbed_layout.py). The
+# classic long-page layout is generated alongside it from the same workbook
+# and form script, kept for reference but not linked anywhere.
 DEFAULT_OUTPUT = Path(__file__).resolve().parent / "sand_control_form.html"
-# The redesigned layout (form/preview_layout.py), generated alongside the
-# current form from the same workbook and form script.
-DEFAULT_PREVIEW_OUTPUT = Path(__file__).resolve().parent / "sand_control_form_preview.html"
+DEFAULT_CLASSIC_OUTPUT = Path(__file__).resolve().parent / "sand_control_form_classic.html"
 # Optional expiration for a form emailed out as a standalone file. When set
 # (here or with --expires-on YYYY-MM-DD), the date is baked in at generation
 # time and checked by the browser on every load, which then locks the form.
@@ -89,9 +90,9 @@ WELL_ZONE_CLASS = {
     "Well Specific Information": "zone-well",
 }
 
-# Each level's counter gets an "Apply" button that adds or removes blocks to
-# match it -- the only way to change a level's size. A counter whose minimum
-# is 1 starts at 1, matching the one block every level always has.
+# Each level's counter is the only way to change that level's size: leaving
+# the box (or Enter, or its arrows) adds or removes blocks to match. A counter
+# whose minimum is 1 starts at 1, matching the one block every level has.
 COUNTER_ROLES = {level.counter: level.key for level in LEVELS}
 
 # The masked Well-scope ID (e.g. XOM-I-00001) names exported files, so a
@@ -179,8 +180,10 @@ def render_control(row: ParamRow, spec: FieldSpec) -> str:
         return f'<select data-param="{dp}" data-kind="select"{conditional}{req_attr}>{"".join(options)}</select>'
     if spec.kind == "number":
         attrs = ""
-        if row.parameter in COUNTER_ROLES and spec.min_value == 1:
-            attrs += ' value="1"'
+        if row.parameter in COUNTER_ROLES:
+            attrs += f' data-counter="{COUNTER_ROLES[row.parameter]}"'
+            if spec.min_value == 1:
+                attrs += ' value="1"'
         if spec.min_value is not None:
             attrs += f' min="{spec.min_value}"'
         if spec.max_value is not None:
@@ -268,9 +271,9 @@ def render_field_row(row: ParamRow, param_show: dict, param_hide: dict) -> str:
     attrs = build_show_hide_attr(row.category, row.parameter, param_show, param_hide)
     req_mark = '<span class="required-mark">*</span>' if spec.required else ""
     tip_html = f'<span class="tt" tabindex="0" data-tip="{esc(row.tooltip)}">?</span>' if row.tooltip else ""
-    role = COUNTER_ROLES.get(row.parameter)
-    action_html = (f'<span class="field-action"><button type="button" class="apply-count-btn" '
-                    f'data-role="{role}">Apply</button></span>' if role else '<span class="field-action"></span>')
+    # A counter's action cell explains a rejected value right beside the box.
+    action_html = ('<span class="field-action counter-note" role="status" aria-live="polite"></span>'
+                   if row.parameter in COUNTER_ROLES else '<span class="field-action"></span>')
     comment_html = f'<input type="text" class="field-comment" data-comment-for="{esc(row.parameter)}" placeholder="Comment">'
     rownum_html = f'<span class="field-rownum">{row.row_number:03d}</span>'
     return (f'<label class="field-row"{attrs}>'
@@ -456,8 +459,7 @@ select.unit-select { width: 100%; padding: .3rem .2rem; }
 .unit-toolbar small { opacity: .9; }
 #basis-change-status { margin-top: .4rem; color: #fff4ac; font-weight: 600; }
 .field-action { display: flex; }
-.apply-count-btn { background: var(--header-bg); color: #fff; border: none; border-radius: 4px; padding: .3rem .6rem; cursor: pointer; font-size: .78rem; }
-.apply-count-btn:hover { opacity: .9; }
+.counter-note { font-size: .72rem; line-height: 1.2; color: #a1281c; }
 .required-mark { color: #b23; font-weight: bold; }
 .tt {
   display: inline-flex; align-items: center; justify-content: center;
@@ -732,7 +734,10 @@ JS = r"""
       // restores it exactly instead of accumulating floating-point roundoff.
       clearConversionSource(target);
       target.dataset.exactValue = target.value;
-      if (target.closest('.field-row').querySelector('.apply-count-btn')) refreshCounterValidity();
+      if (target.matches('[data-counter]')) {
+        target.closest('.field-row').querySelector('.counter-note').textContent = '';
+        refreshCounterValidity();
+      }
     }
   });
   sandForm.addEventListener('focusin', (event) => {
@@ -946,7 +951,7 @@ JS = r"""
     updateTopUnitIndicator();
   });
 
-  // ---- repeaters: one counter + Apply per level is the only control ----
+  // ---- repeaters: one counter per level is the only control ----
   function makeRepeater({ container, template, level, onAdd }) {
     const repeater = {
       level,
@@ -1028,12 +1033,11 @@ JS = r"""
     if (level === 'completion_interval') return row.closest('.lateral-instance').completionRepeater;
     return row.closest('.completion-instance').sandBodyRepeater;
   }
-  function counterInput(row) { return row.querySelector('input[data-kind="number"]'); }
   // Counters are structure, not data: a block holding only its prefilled
   // child counter is still empty.
   function blockHasData(section) {
     return Array.from(section.querySelectorAll('.field-row')).some((row) =>
-      !row.querySelector('.apply-count-btn') &&
+      !row.querySelector('[data-counter]') &&
       (readFieldValue(row) !== null || row.querySelector('.field-comment').value !== ''));
   }
   function rangeText(label, from, to) {
@@ -1047,37 +1051,43 @@ JS = r"""
     return window.confirm(`${reason} deletes ${rangeText(LEVEL_LABELS[repeater.level], keep + 1, repeater.count)} ` +
       'and everything entered in them. Continue?');
   }
-  // A completed export must not say "3" while 2 blocks exist, so a counter
-  // that differs from its blocks (typed but not applied) is invalid until
-  // Apply is pressed. Drafts skip validation and save it as typed.
+  // A completed export must not say "3" while 2 blocks exist. A counter only
+  // differs from its blocks while it is being typed in (leaving the box
+  // applies it), so this is a safety net; drafts save it as typed.
   function refreshCounterValidity() {
-    sandForm.querySelectorAll('.apply-count-btn').forEach((button) => {
-      const row = button.closest('.field-row');
-      const input = counterInput(row);
+    sandForm.querySelectorAll('[data-counter]').forEach((input) => {
       const raw = exactNumber(input);
-      const count = repeaterFor(button.dataset.role, row).count;
+      const count = repeaterFor(input.dataset.counter, input.closest('.field-row')).count;
       input.setCustomValidity(raw !== '' && Number(raw) !== count ?
-        `Press Apply to match: ${raw} entered, ${count} shown.` : '');
+        `${raw} entered but ${count} shown: leave this box to update the blocks.` : '');
     });
   }
-  sandForm.addEventListener('click', (event) => {
-    const button = event.target.closest('.apply-count-btn');
-    if (!button) return;
-    const row = button.closest('.field-row');
-    const input = counterInput(row);
-    const repeater = repeaterFor(button.dataset.role, row);
-    input.value = exactNumber(input);
-    const n = Number(exactNumber(input));
-    // Check the workbook's own limits (whole number, min, max) without the
-    // "press Apply" message, which is exactly what this click resolves.
+  // A counter takes effect when you leave it, press Enter, or click its
+  // arrows -- not on every keystroke, or typing "12" would first build 1
+  // block. Blank changes nothing (the required check covers it on export).
+  // A value outside the workbook's range is put back to the current count
+  // with a note beside the box; removing blocks that hold data asks first.
+  // Safe to call repeatedly: a value that already matches its blocks changes
+  // nothing, so leaving the box after a change or Enter is harmless.
+  function applyCounter(input) {
+    const row = input.closest('.field-row');
+    const note = row.querySelector('.counter-note');
+    const repeater = repeaterFor(input.dataset.counter, row);
+    const raw = exactNumber(input);
+    const keepShown = () => setNumericValue(input, repeater.count >= Number(input.min || 1) ? String(repeater.count) : '');
+    if (raw === '' || raw === String(repeater.count)) { refreshCounterValidity(); return; }
+    note.textContent = '';
     input.setCustomValidity('');
-    if (exactNumber(input) === '' || !input.checkValidity()) {
-      input.reportValidity();
+    input.value = raw;
+    const n = Number(raw);
+    if (!input.checkValidity()) {
+      note.textContent = `Use a whole number from ${input.min} to ${input.max}.`;
+      keepShown();
       refreshCounterValidity();
       return;
     }
     if (n < repeater.count && !confirmRemoval(repeater, n, `Reducing ${fieldParam(row)} to ${n}`)) {
-      setNumericValue(input, String(repeater.count));
+      keepShown();
       refreshCounterValidity();
       return;
     }
@@ -1085,6 +1095,22 @@ JS = r"""
     setNumericValue(input, String(n));
     refreshCounterValidity();
     updateTopUnitIndicator();
+  }
+  sandForm.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && event.target.matches('[data-counter]')) {
+      event.preventDefault();
+      applyCounter(event.target);
+      // Blocking Enter's default also skips the browser's own "committed"
+      // mark, so its arrows would not fire a change when stepping back to
+      // the value the box had on entry. Leaving and re-entering resets it.
+      event.target.blur();
+      event.target.focus();
+    }
+  });
+  // The browser does not fire a change in every case (above), so leaving
+  // the box always applies it as well.
+  sandForm.addEventListener('focusout', (event) => {
+    if (event.target.matches('[data-counter]')) applyCounter(event.target);
   });
   // A well that is not multilateral is its main bore alone: Lateral 1, shown
   // without a lateral banner. Turning the answer away from Yes removes the
@@ -1105,6 +1131,7 @@ JS = r"""
 
   sandForm.addEventListener('change', (event) => {
     const target = event.target;
+    if (target.matches('[data-counter]')) applyCounter(target);
     if (target.dataset.param === MULTILATERAL) leaveMultilateral(target);
     evaluateVisibility(blockOf(target));
     if (target.dataset.param === MULTILATERAL) syncLateralMode();
@@ -1791,9 +1818,10 @@ TOOLTIP_JS = r"""
 """
 
 
-def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, preview: bool = False) -> str:
-    """The current form, or with preview=True the redesigned layout: the same
-    markup and form script plus the presentation layer in preview_layout.py."""
+def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, tabbed: bool = True) -> str:
+    """The official tabbed form, or with tabbed=False the classic long-page
+    layout. Both share the markup and form script; tabbed adds the
+    presentation layer in tabbed_layout.py."""
     well_html = render_well_section(model)
     lateral_template_html = render_lateral_template(model)
     js = (JS.replace("__SCHEMA_VERSION__", str(CURRENT_SCHEMA_VERSION))
@@ -1814,17 +1842,14 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, preview: bool
         validity_notice = ""
 
     title = "Sand Control Failure Record Form (Producer Wells)"
-    css, body_attr, preview_note, outline, ui_js = CSS, "", "", "", ""
-    if preview:
-        title += " — Layout Preview"
-        css += PREVIEW_CSS
-        body_attr = ' class="preview"'
-        preview_note = ('<p class="preview-note">Layout preview: the questions, rules, and files are the same as '
-                        'in the current form, and a file saved in either one opens in the other.</p>')
+    css, body_attr, outline, ui_js = CSS, "", "", ""
+    if tabbed:
+        css += TABBED_CSS
+        body_attr = ' class="tabbed"'
         outline = ('<nav id="outline" aria-label="Form sections"><h2>Form sections</h2>'
                    '<div id="problems" role="status" aria-live="polite" hidden></div>'
                    '<ul id="outline-list"></ul></nav>')
-        ui_js = f"\n<script>{PREVIEW_UI_JS}</script>"
+        ui_js = f"\n<script>{TABBED_JS}</script>"
 
     return f"""<!doctype html>
 <html lang="en">
@@ -1843,7 +1868,7 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, preview: bool
     <small>Well type (or a Sand Body's Fluid Type) sets whether sand rates and PI are liquid- or gas-based; changing it clears numbers entered in the other basis. Standard gas volumes use 60°F and 14.73 psia on both sides.</small>
   </div>
   <p id="basis-change-status" role="status" aria-live="polite"></p>
-  {preview_note}{validity_notice}
+  {validity_notice}
   <p id="expired-banner" class="expired-banner" style="display:none;">
     This form has expired and is no longer accepting submissions. Please contact your Sand Control Failure DB
     program contact for a current version of the form.
@@ -1886,8 +1911,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("input", nargs="?", default=DEFAULT_INPUT, help="Path to the dictionary xlsx file")
     parser.add_argument("output", nargs="?", default=DEFAULT_OUTPUT, help="Path to write the generated HTML form")
-    parser.add_argument("--preview-output", default=DEFAULT_PREVIEW_OUTPUT,
-                        help="Path to write the redesigned layout preview of the same form")
+    parser.add_argument("--classic-output", default=DEFAULT_CLASSIC_OUTPUT,
+                        help="Path to write the classic long-page layout of the same form")
     parser.add_argument("--expires-on", default=DEFAULT_EXPIRES_ON,
                          help="ISO date (YYYY-MM-DD) after which the generated form locks itself "
                               "(client-side check baked in at generation time). Pass \"\" for no expiration.")
@@ -1908,15 +1933,15 @@ def main() -> None:
 
     output_path = Path(args.output)
     output_path.write_text(html_out, encoding="utf-8")
-    preview_path = Path(args.preview_output)
-    preview_path.write_text(render_html(model, expires_on=args.expires_on, preview=True), encoding="utf-8")
+    classic_path = Path(args.classic_output)
+    classic_path.write_text(render_html(model, expires_on=args.expires_on, tabbed=False), encoding="utf-8")
     well_subcats = sum(len(v) for v in model["well"].values())
     lateral_subcats = sum(len(v) for v in model["lateral"].values())
     completion_subcats = sum(len(v) for v in model["completion"].values())
     sand_body_subcats = sum(len(v) for v in model["sand_body"].values())
     print(f"Wrote {output_path} ({len(expand_conditional_rows(rows))} effective parameters: "
           f"{well_subcats} well-scope, {lateral_subcats} lateral-scope, {completion_subcats} completion-interval-scope, "
-          f"{sand_body_subcats} sand-body-scope subcategories) and the layout preview {preview_path}.")
+          f"{sand_body_subcats} sand-body-scope subcategories) and the classic layout {classic_path}.")
 
 
 if __name__ == "__main__":

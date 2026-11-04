@@ -12,8 +12,8 @@ web form  -->  FastAPI backend  -->  PostgreSQL
 A record is nested: a well has one or more laterals (just its main bore
 unless "Is this a Multilateral Well?" is Yes), each lateral has one or more
 completion intervals, and each interval has one or more sand bodies. Each
-level is sized by its own count field and **Apply** button; removing blocks
-that hold data asks first.
+level is sized by its own count field, which takes effect when you leave the
+box; removing blocks that hold data asks first.
 
 The standalone form can save incomplete drafts as JSON or CSV and import
 either format later. Both files preserve entered values, comments, and the
@@ -47,13 +47,14 @@ docker-compose.yml      local Postgres + backend, from zero on any machine
 
 See [CLAUDE.md](CLAUDE.md) for the full data model and architecture.
 
-A redesigned layout of the same form is generated alongside it as
-`form/sand_control_form_preview.html` (hosted copy: `docs/preview.html`). It is
-still one page, but Laterals, Completion Intervals, and Sand Bodies are nested
-tabs that show what is still missing in each; a "Form sections" tree follows
-your position; and "Next missing field" (or Alt+N) jumps through whatever still
-needs an answer. Only the presentation differs; the questions, rules, and files
-are identical, so a file saved in either form opens in the other.
+The form (`form/sand_control_form.html`, hosted as `docs/index.html`) is one
+page with nested tabs for Laterals, Completion Intervals, and Sand Bodies. Counts
+on headings, tabs, and the "Form sections" tree show required fields still
+missing (red) and optional fields still blank (yellow); clicking a count, or
+"Next missing field" (Alt+N) / "Next optional field" (Alt+O), jumps to the next
+one. The previous long-page layout is still generated as
+`form/sand_control_form_classic.html` for reference; both layouts share the same
+questions, rules, and files.
 
 ## Units and formation volume factors
 
