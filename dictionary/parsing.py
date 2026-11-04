@@ -84,7 +84,7 @@ def _single_spec(parsed) -> dict | None:
         return None
     spec = {
         "type": str(type_name), "options": None, "min": None, "max": None, "required": False,
-        "pattern": None, "length": None,
+        "pattern": None, "length": None, "mask": None, "same_code_as": None,
     }
     if isinstance(body, list):
         # Legacy shape: {"List": ["A", "B"]} -- the body *is* the option list.
@@ -104,6 +104,8 @@ def _single_spec(parsed) -> dict | None:
         spec["required"] = bool(body.get("required"))
         spec["pattern"] = body.get("pattern")
         spec["length"] = body.get("length")
+        spec["mask"] = body.get("mask")
+        spec["same_code_as"] = body.get("same_code_as")
     return spec
 
 

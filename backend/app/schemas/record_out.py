@@ -23,6 +23,12 @@ class CompletionIntervalOut(BaseModel):
     sand_bodies: list[SandBodyOut]
 
 
+class LateralOut(BaseModel):
+    ordinal: int
+    fields: Bucket
+    completion_intervals: list[CompletionIntervalOut]
+
+
 class RecordOut(BaseModel):
     id: int
     organization_id: int
@@ -32,4 +38,4 @@ class RecordOut(BaseModel):
     record_status: Literal["draft", "complete"] | None = None
     comments: dict[str, Any] | None = None
     well: Bucket
-    completion_intervals: list[CompletionIntervalOut]
+    laterals: list[LateralOut]

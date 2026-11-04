@@ -24,6 +24,7 @@ TEMPLATE = HERE / "form_logic_tree_template.html"
 OUTPUT = HERE / "form_logic_tree.html"
 SCOPE_GROUPS = (
     ("well", "Well", "well"),
+    ("lateral", "Lateral", "lateral"),
     ("completion_interval", "Completion Interval", "completion"),
     ("sand_body", "Sand Body", "sand_body"),
 )

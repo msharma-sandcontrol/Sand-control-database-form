@@ -16,16 +16,16 @@ GALLON = 0.003785411784
 BARREL = 42 * GALLON
 SCF = FT**3
 PSI = LB * 9.80665 / INCH**2
+BAR = 1e5  # Pa
 
 # Field label -> (SI label, Field-to-SI scale, offset). Unchanged practical
-# units remain fixed; this includes percent, days, degrees, litres, microns,
-# and millidarcies. A missing label fails loudly during form/code generation.
+# units remain fixed; this includes percent, degrees, litres, microns, and
+# millidarcies. Pressure uses bar on the SI side. A missing label fails loudly during form/code generation.
 PAIRS = {
     "%": ("%", 1, 0),
     "L": ("L", 1, 0),
     "bpm": ("L/s", BARREL * 1000 / 60, 0),
     "cP": ("Pa·s", 0.001, 0),
-    "days": ("days", 1, 0),
     "degF": ("°C", 5 / 9, -32 * 5 / 9),
     "degrees": ("degrees", 1, 0),
     "ft": ("m", FT, 0),
@@ -38,15 +38,18 @@ PAIRS = {
     "md": ("md", 1, 0),
     "md-ft": ("md-m", FT, 0),
     "micron": ("micron", 1, 0),
-    "microsips": ("1/Pa", 1e-6 / PSI, 0),
+    # One microsip is 10⁻⁶/psi; shown per bar so values stay readable.
+    "microsips": ("10⁻⁶/bar", BAR / PSI, 0),
     "mmscf/d": ("Sm³/d", 1e6 * SCF, 0),
     "ppa": ("kg/m³ clean fluid", LB / GALLON, 0),
     "ppg": ("g/cm³", LB / GALLON / 1000, 0),
     "rb/STB": ("m³ reservoir/m³ stock tank", 1, 0),
-    "psi": ("kPa", PSI / 1000, 0),
+    "psi": ("bar", PSI / BAR, 0),
     "scf/stb": ("Sm³/Sm³", SCF / BARREL, 0),
     "shots/ft": ("shots/m", 1 / FT, 0),
     "stb/d": ("Sm³/d", BARREL, 0),
+    # Condensate-to-gas ratio: stock-tank liquid per million standard gas.
+    "stb/MMscf": ("Sm³/10⁶ Sm³", BARREL / SCF, 0),
 }
 
 
@@ -68,10 +71,10 @@ def choices_for(row: ParamRow) -> list[dict]:
         ]
     if label == "stb/d/psi or mmscf/d/psi":
         return [
-            _choice("stb/d/psi", "Field", "liquid", BARREL / (PSI / 1000)),
-            _choice("MMSCF/d/psi", "Field", "gas", 1e6 * SCF / (PSI / 1000)),
-            _choice("Sm³ liquid/d/kPa", "SI", "liquid", 1),
-            _choice("Sm³ gas/d/kPa", "SI", "gas", 1),
+            _choice("stb/d/psi", "Field", "liquid", BARREL * BAR / PSI),
+            _choice("MMSCF/d/psi", "Field", "gas", 1e6 * SCF * BAR / PSI),
+            _choice("Sm³ liquid/d/bar", "SI", "liquid", 1),
+            _choice("Sm³ gas/d/bar", "SI", "gas", 1),
         ]
     if label == "res ft³/scf or rb/scf":
         return [
@@ -86,8 +89,8 @@ def choices_for(row: ParamRow) -> list[dict]:
         ]
     if label == "ppg" and row.parameter == "Frac gradient":
         return [
-            _choice("ppg", "Field", "gradient", LB / GALLON * 9.80665 / 1000),
-            _choice("kPa/m", "SI", "gradient", 1),
+            _choice("ppg", "Field", "gradient", LB / GALLON * 9.80665 / BAR),
+            _choice("bar/m", "SI", "gradient", 1),
         ]
     if label not in PAIRS:
         raise ValueError(f"No conversion mapping for row {row.row_number}: {label!r}")

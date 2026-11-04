@@ -12,6 +12,7 @@ from dictionary.grouping import group_by_category_subcategory
 from dictionary.loader import SHEET_NAME, load_dictionary
 from dictionary.models import (
     COMPLETION_SCOPE,
+    LATERAL_SCOPE,
     SAND_BODY_SCOPE,
     WELL_SCOPE,
     FieldSpec,
@@ -30,6 +31,7 @@ from dictionary.visibility import build_visibility_rules, target_rules
 
 __all__ = [
     "COMPLETION_SCOPE",
+    "LATERAL_SCOPE",
     "CURRENT_SCHEMA_VERSION",
     "MULTI_LABEL_SUFFIX_RE",
     "SAND_BODY_SCOPE",

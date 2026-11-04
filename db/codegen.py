@@ -23,6 +23,7 @@ from db.naming import MAX_IDENTIFIER_LENGTH, derive_column_names, slugify  # noq
 from db.type_mapping import sqla_type_for  # noqa: E402
 from dictionary import (  # noqa: E402
     COMPLETION_SCOPE,
+    LATERAL_SCOPE,
     SAND_BODY_SCOPE,
     WELL_SCOPE,
     ParamRow,
@@ -41,6 +42,7 @@ GENERATED_DIR = Path(__file__).resolve().parent / "generated"
 # (registry key prefix, Scope literal, generated module name, table name)
 SCOPES = [
     ("well", WELL_SCOPE, "well_columns", "well"),
+    ("lateral", LATERAL_SCOPE, "lateral_columns", "well_lateral"),
     ("completion_interval", COMPLETION_SCOPE, "completion_interval_columns", "completion_interval"),
     ("sand_body", SAND_BODY_SCOPE, "sand_body_columns", "sand_body"),
 ]
@@ -104,6 +106,8 @@ def generate() -> dict[str, list[tuple[str, str, str]]]:
                 "min_length": spec.min_length,
                 "max_length": spec.max_length,
                 "pattern": spec.pattern,
+                "mask": spec.mask,
+                "same_code_as": spec.same_code_as,
                 "unit": row.unit,
                 "unit_choices": unit_choices,
                 "unit_column": unit_column,

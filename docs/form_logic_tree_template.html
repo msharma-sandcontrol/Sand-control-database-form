@@ -87,7 +87,7 @@ button { cursor: pointer; }
 <body>
 <header class="page-head">
   <h1>Sand Control Form Logic Explorer</h1>
-  <p>Explore the current workbook structure and its visibility rules. This page shows one representative Completion Interval and Sand Body; the real form can repeat both.</p>
+  <p>Explore the current workbook structure and its visibility rules. This page shows one representative Lateral, Completion Interval, and Sand Body; the real form can repeat each.</p>
 </header>
 <div class="banner"><p><strong>Current form, read only.</strong> This explorer simulates the rules in MASTER.xlsx. It does not change the intake form or submit well data. Hidden rows stay in the tree so their conditions remain visible.</p></div>
 <main class="layout">
@@ -134,7 +134,11 @@ button { cursor: pointer; }
   const detailsRoot = document.getElementById('selected-details');
   const search = document.getElementById('search');
   const badgeFilters = { visible: true, required: true, optional: true, hidden: true };
-  let selectedKey = 'well:17';
+  // Open on Severity, the question with Well-type-specific choices. Found by
+  // name so renumbering the workbook cannot point this at another row.
+  const severity = scopes[0].categories.flatMap(category => category.subcategories)
+    .flatMap(section => section.fields).find(field => field.parameter === 'Severity of sand production');
+  let selectedKey = severity ? 'well:' + severity.number : null;
   let status = {};
 
   function key(scope, row) { return scope + ':' + row.number; }
@@ -282,8 +286,8 @@ button { cursor: pointer; }
       const allFields = scope.categories.flatMap(category =>
         category.subcategories.flatMap(section => section.fields));
       const scopeKey = scope.key;
-      const parentBranch = scopeKey === 'well' ? treeRoot :
-        scopeKey === 'completion_interval' ? scopeBranches.well : scopeBranches.completion_interval;
+      const parentBranch = {well: treeRoot, lateral: scopeBranches.well,
+        completion_interval: scopeBranches.lateral, sand_body: scopeBranches.completion_interval}[scopeKey];
       const scopeBranch = addBranch(parentBranch,
         scope.label + (scopeKey === 'well' ? '' : ' (one example)'), scopeKey,
         countVisible(allFields, scopeKey), filtering || (prior.get(scopeKey) ?? scopeKey === 'well'));
@@ -375,15 +379,16 @@ button { cursor: pointer; }
       'Required when visible; hidden controls are disabled.' : 'Optional.');
     addDetailPair(list, 'API', field.required ?
       'Required when visible; hidden answers are rejected.' : 'Optional; hidden answers are rejected.');
-    if (field.options_by) {
+    if (Object.keys(field.options_by || {}).length) {
       const [trigger, groups] = Object.entries(field.options_by)[0];
       const selected = state[item.scope.key][trigger] || '';
       addDetailPair(list, 'Choices', selected ?
         (groups[selected] || []).join('; ') : 'Choose ' + trigger + ' to see the choices.');
     }
     addDetailPair(list, 'JSON path',
-      (item.scope.key === 'well' ? 'well' : item.scope.key === 'completion_interval' ?
-        'completion_intervals[0].fields' : 'completion_intervals[0].sand_bodies[0]') +
+      {well: 'well', lateral: 'laterals[0].fields',
+        completion_interval: 'laterals[0].completion_intervals[0].fields',
+        sand_body: 'laterals[0].completion_intervals[0].sand_bodies[0]'}[item.scope.key] +
       '[' + JSON.stringify(item.category) + '][' + JSON.stringify(item.section.name) +
       '][' + JSON.stringify(field.parameter) + ']', true);
     detailsRoot.classList.remove('detail-empty');

@@ -1,5 +1,5 @@
 """The `completion_interval` table -- one row per Completion Interval within
-a well, plus the dictionary-driven columns generated from MASTER.xlsx's
+a lateral, plus the dictionary-driven columns generated from MASTER.xlsx's
 Completion-Interval-scope parameters (see
 db/generated/completion_interval_columns.py, never hand-edited).
 """
@@ -15,22 +15,22 @@ completion_interval_table = Table(
     "completion_interval",
     Base.metadata,
     Column("id", Integer, primary_key=True),
-    Column("well_id", Integer, ForeignKey("well.id", ondelete="CASCADE"), nullable=False, index=True),
-    # 1-based submission order within the well. NOT used for referential
+    Column("lateral_id", Integer, ForeignKey("well_lateral.id", ondelete="CASCADE"), nullable=False, index=True),
+    # 1-based submission order within the lateral. NOT used for referential
     # integrity -- purely so GET can reconstruct the same "Completion
     # Interval 1, 2, ..." order the form submitted.
     Column("ordinal", Integer, nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()),
     *COMPLETION_INTERVAL_COLUMNS,
-    UniqueConstraint("well_id", "ordinal", name="uq_completion_interval_well_ordinal"),
+    UniqueConstraint("lateral_id", "ordinal", name="uq_completion_interval_lateral_ordinal"),
 )
 
 
 class CompletionInterval(Base):
     __table__ = completion_interval_table
 
-    well = relationship("Well", back_populates="completion_intervals")
+    lateral = relationship("Lateral", back_populates="completion_intervals")
     sand_bodies = relationship(
         "SandBody",
         back_populates="completion_interval",

@@ -67,7 +67,7 @@ def test_hidden_yes_only_answer_is_rejected_for_no_failure(make_payload):
 
 def test_screen_size_selection_method_uses_new_field_name(make_payload):
     payload = make_payload()
-    screens = payload["completion_intervals"][0]["fields"].setdefault("Completion", {}).setdefault(
+    screens = payload["laterals"][0]["completion_intervals"][0]["fields"].setdefault("Completion", {}).setdefault(
         "Liners and Screens", {}
     )
     screens["Screen Size Selection Method"] = "Rule of thumb"
@@ -121,14 +121,14 @@ RESERVOIR = ("Reservoir Characterization", "Reservoir Rock and Fluid Properties"
     ("Oil Producer", None, "stb/d/psi", True),
     ("Oil Producer", None, "MMSCF/d/psi", False),
     ("Gas Producer", None, "MMSCF/d/psi", True),
-    ("Gas Producer", None, "Sm³ liquid/d/kPa", False),
+    ("Gas Producer", None, "Sm³ liquid/d/bar", False),
     ("Oil Producer", "Wet Gas", "MMSCF/d/psi", True),
     ("Gas Producer", "Oil", "MMSCF/d/psi", False),
 ])
 def test_sand_body_pi_basis_matches_form(make_payload, well_type, fluid_type, unit, accepted):
     """A Sand Body's own Fluid Type sets its PI basis; blank falls back to Well type."""
     payload = make_payload(well_type=well_type)
-    group = payload["completion_intervals"][0]["sand_bodies"][0].setdefault(
+    group = payload["laterals"][0]["completion_intervals"][0]["sand_bodies"][0].setdefault(
         RESERVOIR[0], {}).setdefault(RESERVOIR[1], {})
     if fluid_type:
         group["Fluid Type"] = fluid_type
@@ -136,5 +136,5 @@ def test_sand_body_pi_basis_matches_form(make_payload, well_type, fluid_type, un
     if accepted:
         assert RecordIngest.model_validate(payload)
         return
-    with pytest.raises(ValidationError, match="Completion Interval 1, Sand Body 1: .*does not match"):
+    with pytest.raises(ValidationError, match="Lateral 1, Completion Interval 1, Sand Body 1: .*does not match"):
         RecordIngest.model_validate(payload)

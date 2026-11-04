@@ -13,6 +13,9 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
+from dictionary.masks import mask_code
+from dictionary.structure import LEVELS
+
 REGISTRY_PATH = Path(__file__).resolve().parent / "generated" / "field_registry.json"
 
 _TRUE_STRINGS = {"yes", "true"}
@@ -36,6 +39,22 @@ _BY_SCOPE: dict[str, dict[str, dict]] = {}
 for _key, _entry in _REGISTRY.items():
     _scope, _rest = _key.split("::", 1)
     _BY_SCOPE.setdefault(_scope, {})[_rest] = _entry
+
+
+def _level_limits() -> dict[str, int]:
+    """{level key: max blocks}, from each counter's workbook max (see
+    dictionary/structure.py). The form reads the same rows, so its Apply
+    caps and the API's limits cannot drift apart."""
+    limits = {}
+    for level in LEVELS:
+        counters = [entry for entry in _BY_SCOPE[level.parent].values() if entry["parameter"] == level.counter]
+        if len(counters) != 1 or counters[0]["max_value"] is None:
+            raise RuntimeError(f"registry has no capped {level.counter!r} counter")
+        limits[level.key] = int(counters[0]["max_value"])
+    return limits
+
+
+LEVEL_LIMITS = _level_limits()
 
 
 def _unit_basis(rule: dict | None, active_values: dict[str, Any],
@@ -302,10 +321,31 @@ def flatten_bucket(bucket: dict[str, dict[str, dict[str, Any]]], scope: str,
             errors.append(
                 f"{entry['category']} / {entry['subcategory']} / {entry['parameter']}: this field is required"
             )
+    errors.extend(_code_mismatches(index, visible, active_values))
 
     if errors:
         raise MappingError(errors)
     return flat
+
+
+def _code_mismatches(index: dict[str, dict], visible: dict[str, bool],
+                     active_values: dict[str, Any]) -> list[str]:
+    """A field marked same_code_as must start with the other field's company
+    code (XOM-F-001 alongside XOM-I-00001). Checked only when both are
+    complete; a malformed value already failed its own pattern."""
+    by_parameter = {entry["parameter"]: entry for entry in index.values()}
+    errors = []
+    for key, entry in index.items():
+        other_name = entry.get("same_code_as")
+        if not other_name or not visible[key]:
+            continue
+        other = by_parameter[other_name]
+        own_code = mask_code(entry["mask"], str(active_values.get(entry["parameter"], "")))
+        other_code = mask_code(other["mask"], str(active_values.get(other_name, "")))
+        if own_code and other_code and own_code != other_code:
+            errors.append(f"{entry['category']} / {entry['subcategory']} / {entry['parameter']}: "
+                          f"company code {own_code!r} does not match {other_name} ({other_code!r})")
+    return errors
 
 
 def build_record_out(row_values: dict[str, Any], scope: str) -> dict[str, dict[str, dict[str, Any]]]:

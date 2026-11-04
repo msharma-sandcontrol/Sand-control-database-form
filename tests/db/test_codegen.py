@@ -15,6 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 GENERATED_DIR = REPO_ROOT / "db" / "generated"
 GENERATED_FILES = [
     "well_columns.py",
+    "lateral_columns.py",
     "completion_interval_columns.py",
     "sand_body_columns.py",
     "field_registry.json",
@@ -23,7 +24,7 @@ GENERATED_FILES = [
 
 def test_codegen_runs_without_error():
     per_table = codegen.generate()
-    assert set(per_table.keys()) == {"well", "completion_interval", "sand_body"}
+    assert set(per_table.keys()) == {"well", "lateral", "completion_interval", "sand_body"}
     assert len(per_table["well"]) > 0
     assert len(per_table["completion_interval"]) > 0
     assert len(per_table["sand_body"]) > 0

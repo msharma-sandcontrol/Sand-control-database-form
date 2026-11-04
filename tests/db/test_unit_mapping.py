@@ -11,14 +11,14 @@ from db.mapping import MappingError, build_record_out, flatten_bucket
 def test_blank_unit_is_stored_and_reconstructed(make_payload):
     well = make_payload()["well"]
     well["Well Specific Information"]["Sand Production & Well Performance"]["Initial PI"] = {
-        "value": None, "unit": "Sm³ liquid/d/kPa",
+        "value": None, "unit": "Sm³ liquid/d/bar",
     }
     flat = flatten_bucket(well, "well")
-    assert flat["initial_pi_unit"] == "Sm³ liquid/d/kPa"
+    assert flat["initial_pi_unit"] == "Sm³ liquid/d/bar"
     assert "initial_pi" not in flat
     rebuilt = build_record_out(flat, "well")
     assert rebuilt["Well Specific Information"]["Sand Production & Well Performance"]["Initial PI"] == {
-        "value": None, "unit": "Sm³ liquid/d/kPa",
+        "value": None, "unit": "Sm³ liquid/d/bar",
     }
 
 
@@ -34,7 +34,7 @@ def test_hidden_blank_keeps_unit_but_hidden_answer_is_rejected(make_payload):
 
 
 def test_temperature_limits_follow_selected_celsius_unit(make_payload):
-    sand = make_payload()["completion_intervals"][0]["sand_bodies"][0]
+    sand = make_payload()["laterals"][0]["completion_intervals"][0]["sand_bodies"][0]
     group = sand.setdefault("Reservoir Characterization", {}).setdefault(
         "Reservoir Rock and Fluid Properties", {}
     )
@@ -48,12 +48,12 @@ def test_temperature_limits_follow_selected_celsius_unit(make_payload):
 
 
 def test_invalid_unit_is_rejected(make_payload):
-    well = make_payload()["well"]
-    well["Well Specific Information"]["Well & Field Identification"]["Well TD, MD"] = {
+    lateral = make_payload()["laterals"][0]["fields"]
+    lateral["Lateral"]["Lateral Details"]["TD, MD"] = {
         "value": "100", "unit": "furlongs",
     }
     with pytest.raises(MappingError, match="not allowed"):
-        flatten_bucket(well, "well")
+        flatten_bucket(lateral, "lateral")
 
 
 def test_gas_basis_keeps_zero_minimum(make_payload):
@@ -69,7 +69,7 @@ def test_gas_basis_keeps_zero_minimum(make_payload):
 
 @pytest.mark.parametrize(("well_type", "allowed", "rejected"), [
     ("Oil Producer", "stb/d/psi", "MMSCF/d/psi"),
-    ("Gas Condensate Producer", "Sm³ gas/d/kPa", "Sm³ liquid/d/kPa"),
+    ("Gas Condensate Producer", "Sm³ gas/d/bar", "Sm³ liquid/d/bar"),
 ])
 def test_well_type_sets_liquid_or_gas_units(make_payload, well_type, allowed, rejected):
     well = make_payload(well_type=well_type)["well"]
@@ -82,7 +82,7 @@ def test_well_type_sets_liquid_or_gas_units(make_payload, well_type, allowed, re
 
 
 def test_sand_body_pi_follows_its_own_fluid_type(make_payload):
-    sand = make_payload()["completion_intervals"][0]["sand_bodies"][0]
+    sand = make_payload()["laterals"][0]["completion_intervals"][0]["sand_bodies"][0]
     group = sand.setdefault("Reservoir Characterization", {}).setdefault(
         "Reservoir Rock and Fluid Properties", {}
     )
@@ -115,7 +115,7 @@ def test_basis_drivers_cover_every_workbook_answer():
 def test_conditional_oil_and_gas_fvf_use_distinct_saved_fields(make_payload):
     from dictionary.conditional_fields import GAS_FVF, OIL_FVF
 
-    sand = make_payload()["completion_intervals"][0]["sand_bodies"][0]
+    sand = make_payload()["laterals"][0]["completion_intervals"][0]["sand_bodies"][0]
     group = sand.setdefault("Reservoir Characterization", {}).setdefault(
         "Reservoir Rock and Fluid Properties", {}
     )
@@ -145,7 +145,7 @@ def test_conditional_oil_and_gas_fvf_use_distinct_saved_fields(make_payload):
 def test_bg_reservoir_barrel_unit_is_valid(make_payload):
     from dictionary.conditional_fields import GAS_FVF
 
-    sand = make_payload()["completion_intervals"][0]["sand_bodies"][0]
+    sand = make_payload()["laterals"][0]["completion_intervals"][0]["sand_bodies"][0]
     group = sand.setdefault("Reservoir Characterization", {}).setdefault(
         "Reservoir Rock and Fluid Properties", {}
     )
@@ -157,9 +157,9 @@ def test_bg_reservoir_barrel_unit_is_valid(make_payload):
 
 def test_numeric_api_readback_keeps_decimal_digits():
     rebuilt = build_record_out({
-        "well_td_md": Decimal("123456789.123456789"),
-        "well_td_md_unit": "ft",
-    }, "well")
-    assert rebuilt["Well Specific Information"]["Well & Field Identification"]["Well TD, MD"] == {
+        "td_md": Decimal("123456789.123456789"),
+        "td_md_unit": "ft",
+    }, "lateral")
+    assert rebuilt["Lateral"]["Lateral Details"]["TD, MD"] == {
         "value": "123456789.123456789", "unit": "ft",
     }

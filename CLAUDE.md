@@ -20,12 +20,13 @@ architecture" below).
 ## File inventory
 
 - `MASTER.xlsx` -- **the source of truth**. Sheet `MasterView`, one row per Parameter
-  (148 currently). Shared input to both `form/generate_form.py` and `db/codegen.py` via
+  (151 currently). Shared input to both `form/generate_form.py` and `db/codegen.py` via
   the `dictionary` package -- nothing else reads it directly.
 - `dictionary/` -- the shared parser for `MASTER.xlsx`. Owns the data model (`ParamRow`,
   `FieldSpec`), the cell-DSL parsers, and `classify_field()`. Both `form/` and `db/`
   import from here rather than each maintaining their own interpretation of what a
-  dictionary cell means.
+  dictionary cell means. `structure.py` names the repeatable levels and the counter
+  that sizes each one; `masks.py` turns ID masks like `AAA-I-#####` into regexes.
 - `form/generate_form.py` -- reads `MASTER.xlsx` (via `dictionary`) and writes a
   standalone, no-backend, client-side HTML intake form.
 - `form/sand_control_form.html` -- generated output (regenerate after any dictionary
@@ -61,7 +62,8 @@ Columns, in order:
 
 | Column | Meaning |
 |---|---|
-| `Scope` | `Well`, `Completion Interval {id}`, or `Sand Body {id}` -- see "Scope hierarchy" below |
+| `Row Number` | The row's 1-based position, shown as `001`... next to each field. Rows are renumbered when one is added, moved, or deleted. |
+| `Scope` | `Well`, `Lateral {id}`, `Completion Interval {id}`, or `Sand Body {id}` -- see "Scope hierarchy" below |
 | `Category` | Top-level grouping (varies per scope -- e.g. `General Information`, `Well Specific Information`, `Drilling`, `Completion`, `Reservoir Characterization`) |
 | `Subcategory` | Second-level grouping within a Category |
 | `Parameter` | Field name, shown as the row label |
@@ -77,11 +79,16 @@ Columns, in order:
 
 ```
 Well  (rendered once per record)
- └── Completion Interval {id}  (repeatable -- a well has 1+)
-      └── Sand Body {id}  (repeatable -- a completion interval has 1+ sand bodies)
+ └── Lateral {id}  (repeatable -- 1 for a normal well, 2-100 for a multilateral)
+      └── Completion Interval {id}  (repeatable -- a lateral has 1-10)
+           └── Sand Body {id}  (repeatable -- a completion interval has 1-10)
 ```
 
-Current row distribution: Well=57, Completion Interval=62, Sand Body=29.
+Current row distribution: Well=55, Lateral=3, Completion Interval=62, Sand Body=31.
+A well that is not multilateral (`Is this a Multilateral Well?` = No) has exactly one
+lateral, its main bore; the form then hides the lateral banner, so the page reads as
+lateral details followed by completion intervals. For a multilateral well the main
+bore counts as Lateral 1. Each lateral carries its own TD (MD and TVD).
 Drilling, Completion (incl. Sand Control equipment: Completion Type, Screen Type, Gravel
 Pack details, etc.) live at Completion Interval scope, meaning multiple Sand Bodies
 within one Completion Interval share a single drilling/completion/sand-control design
@@ -90,13 +97,13 @@ decision, not an oversight. Pre-production/cleanup and Reservoir Characterizatio
 (rock/fluid properties) live at Sand Body scope, since those genuinely vary per sand
 body even when the equipment above them doesn't.
 
-Two Parameters are pure UI/record-keeping counters (`Number of Completion Intervals` at
-Well scope, `Number of sand bodies` at Completion Interval scope). They are **not** used
-to drive the form's repeaters or to enforce referential integrity anywhere downstream --
-the real count is always however many child blocks/rows actually exist. The form does
-offer an "Apply" button next to each that grows the corresponding repeater to match a
-typed number (see "Form behavior" below), but shrinking or mismatches are never
-auto-corrected or rejected.
+Each repeatable level is sized by one counter in its parent (`dictionary/structure.py`):
+`Number of laterals` (Well, shown only for a multilateral well), `Number of Completion
+Intervals` (Lateral), and `Number of sand bodies` (Completion Interval). The counter is
+the **only** control for its level: its Apply button adds or removes blocks to match
+(see "Form behavior"), and the API rejects a record whose counters disagree with the
+blocks it sent. Each counter's workbook `max` is that level's cap for both the form and
+the API, so changing a cap is a workbook edit, not a code change.
 
 ### `Data Validation` / `Affected Subcategory` / `Affected Parameter` parsing
 
@@ -116,6 +123,12 @@ plus optional modifiers (`parse_validation_cell`):
   genuine list literal, so option order is preserved directly by `ast.literal_eval` (no
   order-preserving-regex workaround needed, unlike a set).
 - Text, unconstrained: `{"Any Value": {}}`.
+- Fixed-format IDs: `{"Text": {"mask": "AAA-I-#####"}}` -- `A` is one capital letter,
+  `#` one digit, everything else fixed text. The form draws one box per letter/digit
+  run with the fixed text between them (`[XOM]-I-[00001]`) and saves the joined
+  string; the API checks the regex derived from the same mask (`dictionary/masks.py`).
+  `"same_code_as": "<Parameter>"` additionally requires the leading letter code to
+  equal that other field's (Field ID `XOM-F-001` must match Well ID `XOM-I-00001`).
 - Multi-number Text fields (sub-values in one cell), e.g. `Mud PSD`: one spec per
   sub-value, each shaped like a normal Data Validation cell -- so sub-values can carry
   independent types/constraints. The two multi-number cells on the current sheet write
@@ -150,24 +163,32 @@ segment-recovery fallback described above. Zero cells fail outright.
 
 - `General Information`, `Well Specific Information`, and any other Well-scope Category render once
   at the top, each as a bordered "zone" with a colored header.
-- Completion Intervals render as an independently repeatable block (default cap: 10,
-  `--max-completion-intervals`). Each Completion Interval block contains its own nested,
-  independently repeatable Sand Body blocks (default cap: 10 per parent,
-  `--max-sand-bodies`) -- a genuine two-level nested repeater, each level
-  numbering and coloring independently.
-- A "+ Apply" button next to each of the two counter fields (`Number of Completion
-  Intervals`, `Number of sand bodies`) grows the corresponding repeater to
-  match a typed number; it only ever adds blocks, never removes them.
-- At least one Completion Interval and, within it, at least one Sand Body are
-  always present -- their "Remove" buttons refuse to delete the last remaining one
-  and show an alert instead.
+- Laterals, Completion Intervals, and Sand Bodies are three nested repeatable
+  levels. Every level always has at least one block. Banners name the full path
+  (`LATERAL 2 - COMPLETION INTERVAL 1 - SAND BODY 3`; the `LATERAL n` part only for a
+  multilateral well), and each level numbers and colors its blocks within its parent.
+- Each level's counter field (see "Scope hierarchy") has an **Apply** button that
+  adds or removes blocks at the end to match it. There are no separate add/remove
+  buttons. If any block about to be removed holds data, Apply asks first and Cancel
+  restores the old count. The interval and sand-body counters start at 1, matching
+  the one block present. A counter that was typed but not applied makes a completed
+  export stop on that field ("Press Apply to match"); drafts save it as typed.
+- Changing `Is this a Multilateral Well?` away from Yes removes Laterals 2+ (asking
+  first if they hold data; Cancel puts Yes back). Changing it to Yes keeps the
+  existing blocks as Lateral 1.
 - A field gets a "?" icon when the workbook supplies tooltip text, and a red
   `*` marker when the dictionary marks it `required`.
 - Category names are never shown as headings inside Completion Interval/Sand Body
   blocks (only Subcategory headings) -- matches the original Main Sheet convention.
-- Conditional visibility (`data-show-if`/`data-hide-if`) is evaluated per block
-  instance, scoped to that instance's own DOM subtree, so cloned blocks behave
-  independently.
+- Conditional visibility (`data-show-if`/`data-hide-if`) reads each rule's trigger
+  from the target's **own** block (`findParamField`), so cloned blocks behave
+  independently -- Sand Body 2's Fluid Type drives Sand Body 2, even when a parent
+  block re-evaluates its whole subtree.
+- `Well identification number (anonymized)` and `Field identification number
+  (anonymized)` use masked ID boxes (see the `mask` DSL above): letters are
+  capitalized as typed, focus jumps to the next box, and pasting a whole ID fills all
+  boxes. A half-filled optional ID and a company code that differs between the two IDs
+  both block a completed export.
 - `Failure Confirmation` retains the required `Sand Control Failure` Yes/No question. The
   formerly separate failure and production history sections are now one always
   visible `Sand Production & Well Performance` section. Shared questions appear
@@ -176,19 +197,23 @@ segment-recovery fallback described above. Zero cells fail outright.
   independent of failure status. Oil and gas choices have different thresholds;
   `Sand rate quantification = Measurable` still reveals its three rate fields.
 - **JSON and CSV files both round-trip the form state**, including field comments
-  and the number/order of Completion Intervals and Sand Bodies. JSON keeps the
-  original payload structure and adds a parallel comments tree. The backend
+  and the number/order of Laterals, Completion Intervals, and Sand Bodies. JSON nests
+  `laterals[].completion_intervals[].sand_bodies[]` (each block with its own
+  `fields`) and adds a parallel comments tree of the same shape. The backend
   accepts that shape and preserves comments in raw_payload for record fetches.
-- **CSV** remains long format with Category, Subcategory, Parameter, Completion
-  Interval, Sand Body, Value, Unit, and Comment; a final Row Type column marks
-  fields, the timestamp, Completion Intervals, and Sand Bodies. Multi-number
+- **CSV** remains long format with Category, Subcategory, Parameter, Lateral,
+  Completion Interval, Sand Body, Value, Unit, and Comment; a final Row Type column
+  marks fields, metadata, Laterals, Completion Intervals, and Sand Bodies. Multi-number
   values use a JSON array in the Value cell so missing positions survive.
 - The footer has **Import file**, **Save draft**, and **Export completed record**
   actions; the latter two offer JSON and CSV in menus. Drafts save partial records
   without validation; completed exports validate visible fields. Filenames end
   in _draft or _complete, and both formats record the same status internally
-  (record_status in JSON, a metadata row in CSV). Missing anonymized names
-  use Unnamed, with the anonymized ID appended when available.
+  (record_status in JSON, a metadata row in CSV). Files are named after the Well
+  ID (`XOM-I-00001_draft.json`), or `Unnamed` until the ID is complete.
+- Import rejects dates not written `YYYY-MM-DD` (as the API does) instead of letting
+  the date box silently drop them -- Excel rewrites CSV dates in the viewer's locale
+  when it re-saves a file.
 - Import accepts either format and replaces current entries after confirmation.
   Files are read and written in the browser; the static form makes no backend call.
   The API rejects an explicit draft marker on record submission. Wiring exports
@@ -201,33 +226,40 @@ segment-recovery fallback described above. Zero cells fail outright.
 | Table column headers | `#203864` (white bold text) | -- |
 | `General Information` | `#FFD966` | `#FFF2CC` |
 | `Well Specific Information` | `#9DC3E6` | `#DEEBF7` |
+| Lateral, odd instance | `#9FD8D2` | `#E3F4F2` |
+| Lateral, even instance | `#D6C4B4` | `#F3ECE6` |
 | Completion Interval, odd instance | `#A9D18E` | `#E2F0D9` |
 | Completion Interval, even instance | `#F4B183` | `#FBE5D6` |
 | Sand Body, odd instance | `#B4A7D6` | `#EDE7F6` |
 | Sand Body, even instance | `#EA9999` | `#FBE4E4` |
 
-Numbering/coloring for Sand Body blocks resets within each Completion
-Interval parent (local, not global, odd/even). Banner/heading text is `#002060`
+Numbering/coloring for each level resets within its parent (local, not
+global, odd/even). A well that is not multilateral shows no lateral banner;
+its lateral details use the odd-lateral colors. Banner/heading text is `#002060`
 (navy), bold. These values live in the `CSS` constant in `form/generate_form.py`.
 
 ## Database & API architecture
 
 ### Schema
 
-Four tables, generated to mirror the dictionary's own hierarchy plus company
+Five tables, generated to mirror the dictionary's own hierarchy plus company
 ownership:
 
 - `organizations` -- one row per company. `api_token_hash` (SHA-256 hex digest) is the
   only credential stored; the plaintext token is shown once, at creation time.
 - `well` -- structural/audit columns (`id`, `organization_id`, `created_at`,
   `updated_at`, `submitted_at`, `raw_payload` JSONB) + one column per Well-scope
-  Parameter (57 currently), plus `schema_version` (currently 0).
-- `completion_interval` -- `id`, `well_id` (FK, `ON DELETE CASCADE`), `ordinal`
-  (1-based submission order, **not** used for referential integrity), timestamps + the
+  Parameter (55 currently), plus `schema_version` (currently 0).
+- `well_lateral` -- `id`, `well_id` (FK, `ON DELETE CASCADE`), `ordinal` (1-based
+  submission order, **not** used for referential integrity; Lateral 1 is the main
+  bore), timestamps + the Lateral-scope columns (TD MD/TVD and the interval counter).
+  `UNIQUE(well_id, ordinal)`. Named `well_lateral` because `LATERAL` is a reserved
+  word in Postgres; the registry/payload key is still `lateral`.
+- `completion_interval` -- same pattern with `lateral_id` (FK to `well_lateral.id`) + the
   ~67 Completion-Interval-scope columns (62 rows; 1 multi-number row expands into 6
-  columns). `UNIQUE(well_id, ordinal)`.
-- `sand_body` -- same pattern, FK to `completion_interval.id`, + the ~34 Sand-Body-scope
-  columns (29 rows; 1 multi-number row expands into 6 columns). `UNIQUE(completion_interval_id,
+  columns). `UNIQUE(lateral_id, ordinal)`.
+- `sand_body` -- same pattern, FK to `completion_interval.id`, + the ~36 Sand-Body-scope
+  columns (31 rows; 1 multi-number row expands into 6 columns). `UNIQUE(completion_interval_id,
   ordinal)`.
 
 Design decisions worth knowing before touching this:
@@ -250,12 +282,12 @@ Design decisions worth knowing before touching this:
 ### Codegen pipeline (`db/codegen.py`)
 
 Reuses `dictionary.load_dictionary()` + `dictionary.classify_field()` directly. For
-each of the 3 scopes it slugifies each Parameter name into a column name
+each of the 4 scopes it slugifies each Parameter name into a column name
 (`db/naming.py`; multi-number rows expand into N names from their sub-labels), maps the
 Input Type to a SQLAlchemy type (`db/type_mapping.py`), and emits two kinds of
 committed, generated-not-hand-edited output:
 
-- `db/generated/{well,completion_interval,sand_body}_columns.py` -- plain
+- `db/generated/{well,lateral,completion_interval,sand_body}_columns.py` -- plain
   lists of `Column(...)` definitions, combined with a handful of structural columns in
   `db/models/*.py` via SQLAlchemy's imperative-`Table` + declarative-class pattern.
 - `db/generated/field_registry.json` -- one entry per dictionary row (keyed
@@ -312,8 +344,11 @@ advance.
 FastAPI, sync SQLAlchemy `Session` (not async -- simpler, more mature Alembic
 support). `Authorization: Bearer <token>` org auth (`backend/app/deps/auth.py`), hashed
 and compared against `organizations.api_token_hash`. Routes: `GET /health` (round-trips
-a real query), `POST /records` (submit -- one transaction: well -> its completion
-intervals -> their sand bodies), `GET /records/{id}` (fetch, org-scoped). The
+a real query), `POST /records` (submit -- one transaction: well -> its laterals ->
+their completion intervals -> their sand bodies), `GET /records/{id}` (fetch,
+org-scoped). Besides each bucket's own field rules, `RecordIngest` enforces the
+structure: 1 to the workbook cap of blocks at every level, exactly one lateral unless
+the well is multilateral, and every counter equal to its number of blocks. The
 ingest payload's shape is the same nested `Category -> Subcategory -> Parameter ->
 value` structure the form's own JSON export produces, modeled as generic nested dicts
 in `backend/app/schemas/ingest.py` rather than ~150 named fields, validated by
@@ -421,11 +456,11 @@ See the README for the full local-dev and Docker workflows.
   guard falls back to generic `Value 1`..`Value 5` labels rather than guessing which of
   the 6 D-labels to drop. Likely a missing 6th `"Decimal": {"min": 0}` entry -- confirm
   and add it if so.
-- **Counter-field/repeater relationship**: `Number of Completion Intervals` and `Number
-  of sand bodies` are informational only (see "Scope hierarchy" above) -- if a
-  stronger guarantee is ever wanted (e.g. rejecting a mismatch between the stated count
-  and the actual submitted count), that would need explicit product/API design, not
-  just a schema change.
+
+Resolved in the November 2026 round: the counters now size their levels and the API
+rejects a mismatch (they used to be informational only); the three `Time to ...`
+durations, whose `required` sat outside the type in the cell and so never parsed,
+became optional `Date of ...` fields.
 
 Resolved since the last major dictionary revision (kept here briefly for continuity,
 remove once stale): the `Completion Details` Category/Subcategory name collision was

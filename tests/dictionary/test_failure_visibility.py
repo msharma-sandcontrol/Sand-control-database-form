@@ -2,14 +2,16 @@
 
 The published row lists predate deletion of old row 18, so every affected
 row number after severity is one lower in the current workbook. Deleting
-Well start-up date (old row 38) lowered every row after it by one more.
+Well start-up date (old row 38) lowered every row after it by one more, and
+the November round (Well name removed, two multilateral rows added, both TD
+rows moved to the Lateral level) lowered this section by one more again.
 """
 from __future__ import annotations
 
 from db.mapping import _REGISTRY
 
-YES_ONLY = {17} | set(range(18, 25)) | set(range(32, 37)) | set(range(40, 46))
-SHARED = set(range(28, 32)) | set(range(37, 40)) | set(range(46, 57))
+YES_ONLY = {16} | set(range(17, 24)) | set(range(31, 36)) | set(range(39, 45))
+SHARED = set(range(27, 31)) | set(range(36, 39)) | set(range(45, 56))
 
 
 def test_failure_confirmation_only_controls_its_extra_questions():
@@ -36,7 +38,7 @@ def test_severity_is_one_required_yes_only_field_with_type_specific_choices():
 
 
 def test_sand_rates_still_depend_on_measurable_quantification():
-    rows = [entry for entry in _REGISTRY.values() if 25 <= entry["row_number"] <= 27]
+    rows = [entry for entry in _REGISTRY.values() if 24 <= entry["row_number"] <= 26]
     assert len(rows) == 3
     for entry in rows:
         assert entry["visibility"]["show"] == [

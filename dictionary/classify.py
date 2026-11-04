@@ -1,6 +1,7 @@
 """Maps a dictionary row's Input Type + Data Validation into a typed FieldSpec."""
 from __future__ import annotations
 
+from dictionary.masks import mask_pattern
 from dictionary.models import FieldSpec, ParamRow
 from dictionary.parsing import parse_dropdown_options, parse_multi_number, parse_validation_cell
 
@@ -78,6 +79,12 @@ def classify_field(row: ParamRow) -> FieldSpec:
         if isinstance(spec, dict):
             length, pattern = spec.get("length"), spec.get("pattern")
             required = bool(spec.get("required"))
+            if spec.get("mask"):
+                if pattern or length is not None:
+                    raise ValueError(f"row {row.row_number}: a mask already fixes the format; "
+                                     "drop pattern/length")
+                return FieldSpec(kind="text", pattern=mask_pattern(spec["mask"]), mask=spec["mask"],
+                                 same_code_as=spec.get("same_code_as"), required=required)
             if length is not None or pattern:
                 return FieldSpec(
                     kind="text", min_length=length, pattern=_resolve_pattern(pattern), required=required,

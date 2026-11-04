@@ -111,6 +111,9 @@ def make_payload():
             return entry["min_value"] if entry["min_value"] is not None else 1
         if kind == "multi_number":
             return [1] * len(entry["db_columns"])
+        if kind == "text" and entry.get("mask"):
+            # TTT-I-11111: a complete, well-formed masked ID.
+            return "".join("T" if ch == "A" else "1" if ch == "#" else ch for ch in entry["mask"])
         if kind == "text" and entry["pattern"]:
             return "A" * max(entry["min_length"] or 1, 8)
         return "sample text"
@@ -120,6 +123,7 @@ def make_payload():
         buckets: dict[str, dict] = {scope: {} for scope in _BY_SCOPE}
         controls = {
             "Sand Control Failure": sand_failure,
+            "Is this a Multilateral Well?": "No",
             "Well type": well_type,
             "Operating environment": environment,
         }
@@ -138,10 +142,13 @@ def make_payload():
         return {
             "schema_version": CURRENT_SCHEMA_VERSION,
             "well": buckets.get("well", {}),
-            "completion_intervals": [
-                {"fields": buckets.get("completion_interval", {}),
-                 "sand_bodies": [buckets.get("sand_body", {})]},
-            ],
+            "laterals": [{
+                "fields": buckets.get("lateral", {}),
+                "completion_intervals": [
+                    {"fields": buckets.get("completion_interval", {}),
+                     "sand_bodies": [buckets.get("sand_body", {})]},
+                ],
+            }],
         }
 
     return _factory

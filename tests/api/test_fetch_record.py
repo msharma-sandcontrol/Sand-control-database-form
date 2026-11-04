@@ -9,17 +9,21 @@ def _auth(token: str) -> dict:
 def test_fetch_round_trips_submitted_data(client, seeded_org, make_payload):
     _, token = seeded_org
     payload = make_payload(sand_failure="Yes")
-    payload["well"]["Well Specific Information"]["Well & Field Identification"]["Well name (anonymized)"] = "FETCHTEST"
+    payload["well"]["Well Specific Information"]["Well & Field Identification"][
+        "Well identification number (anonymized)"] = "FET-I-00007"
     payload["record_status"] = "complete"
     payload["comments"] = {
         "well": {"Well Specific Information": {
-            "Well & Field Identification": {"Well name (anonymized)": "Private label"}}},
-        "completion_intervals": [{
-            "fields": {"Wellbore": {"Wellbore properties": {"Well Deviation": "Estimated"}}},
-            "sand_bodies": [{
-                "Reservoir Characterization": {
-                    "Reservoir Rock and Fluid Properties": {"Fines Content (Sub 44 microns)": "Lab result pending"}
-                }
+            "Well & Field Identification": {"Well identification number (anonymized)": "Private label"}}},
+        "laterals": [{
+            "fields": {"Lateral": {"Lateral Details": {"TD, MD": "From the drilling report"}}},
+            "completion_intervals": [{
+                "fields": {"Wellbore": {"Wellbore properties": {"Well Deviation": "Estimated"}}},
+                "sand_bodies": [{
+                    "Reservoir Characterization": {
+                        "Reservoir Rock and Fluid Properties": {"Fines Content (Sub 44 microns)": "Lab result pending"}
+                    }
+                }],
             }],
         }],
     }
@@ -36,9 +40,13 @@ def test_fetch_round_trips_submitted_data(client, seeded_org, make_payload):
             payload["well"]["Well Specific Information"]["Sand Production & Well Performance"]
             ["Severity of sand production"])
     ident = body["well"]["Well Specific Information"]["Well & Field Identification"]
-    assert ident["Well name (anonymized)"] == "FETCHTEST"
-    assert len(body["completion_intervals"]) == 1
-    assert len(body["completion_intervals"][0]["sand_bodies"]) == 1
+    assert ident["Well identification number (anonymized)"] == "FET-I-00007"
+    assert len(body["laterals"]) == 1
+    details = body["laterals"][0]["fields"]["Lateral"]["Lateral Details"]
+    assert details["Number of Completion Intervals"] == 1
+    assert details["TD, MD"] == {"value": "0", "unit": "ft"}  # default unit filled in on readback
+    assert len(body["laterals"][0]["completion_intervals"]) == 1
+    assert len(body["laterals"][0]["completion_intervals"][0]["sand_bodies"]) == 1
     assert body["comments"] == payload["comments"]
     assert body["record_status"] == "complete"
 

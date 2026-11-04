@@ -12,13 +12,13 @@ def _auth(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_submit_happy_path_creates_rows_in_all_three_tables(client, seeded_org, db_session, make_payload):
+def test_submit_happy_path_creates_rows_in_all_four_tables(client, seeded_org, db_session, make_payload):
     org, token = seeded_org
     payload = make_payload()
-    payload["well"]["Well Specific Information"]["Well & Field Identification"]["Well name (anonymized)"] = "TESTWELL1"
-    payload["completion_intervals"][0]["fields"] = {
-        "Completion": {"Liners and Screens": {"Screen Size Selection Method": "Rule of thumb"}}
-    }
+    payload["well"]["Well Specific Information"]["Well & Field Identification"][
+        "Well identification number (anonymized)"] = "TST-I-00042"
+    payload["laterals"][0]["completion_intervals"][0]["fields"].setdefault("Completion", {})[
+        "Liners and Screens"] = {"Screen Size Selection Method": "Rule of thumb"}
     resp = client.post("/records", json=payload, headers=_auth(token))
     assert resp.status_code == 201, resp.text
     record_id = resp.json()["id"]
@@ -28,12 +28,14 @@ def test_submit_happy_path_creates_rows_in_all_three_tables(client, seeded_org, 
     well = db_session.get(Well, record_id)
     assert well is not None
     assert well.organization_id == org.id
-    assert well.well_name_anonymized == "TESTWELL1"
+    assert well.well_identification_number_anonymized == "TST-I-00042"
     assert well.schema_version == payload["schema_version"]
     assert well.severity_of_sand_production is None
-    assert len(well.completion_intervals) == 1
-    assert well.completion_intervals[0].screen_size_selection_method == "Rule of thumb"
-    assert len(well.completion_intervals[0].sand_bodies) == 1
+    assert len(well.laterals) == 1
+    assert well.laterals[0].number_of_completion_intervals == 1
+    (ci,) = well.laterals[0].completion_intervals
+    assert ci.screen_size_selection_method == "Rule of thumb"
+    assert len(ci.sand_bodies) == 1
 
 
 def test_submit_explicit_draft_returns_422(client, seeded_org, make_payload):
@@ -48,7 +50,8 @@ def test_submit_explicit_draft_returns_422(client, seeded_org, make_payload):
 def test_submit_missing_required_field_returns_422(client, seeded_org, make_payload):
     _, token = seeded_org
     payload = make_payload()
-    del payload["well"]["Well Specific Information"]["Well & Field Identification"]["Well name (anonymized)"]
+    del payload["well"]["Well Specific Information"]["Well & Field Identification"][
+        "Well identification number (anonymized)"]
     resp = client.post("/records", json=payload, headers=_auth(token))
     assert resp.status_code == 422
     assert "required" in resp.text.lower()
@@ -73,7 +76,7 @@ def test_submit_invalid_dropdown_value_returns_422(client, seeded_org, make_payl
 def test_submit_out_of_range_number_returns_422(client, seeded_org, make_payload):
     _, token = seeded_org
     payload = make_payload()
-    payload["well"]["Completion Intervals"] = {"Completion Intervals": {"Number of Completion Intervals": 999}}
+    payload["laterals"][0]["fields"]["Lateral"]["Lateral Details"]["TD, MD"] = {"value": "-5", "unit": "ft"}
     resp = client.post("/records", json=payload, headers=_auth(token))
     assert resp.status_code == 422
 
@@ -81,7 +84,7 @@ def test_submit_out_of_range_number_returns_422(client, seeded_org, make_payload
 def test_submit_multi_number_splits_into_columns(client, seeded_org, db_session, make_payload):
     _, token = seeded_org
     payload = make_payload()
-    completion = payload["completion_intervals"][0]["fields"].setdefault("Completion", {})
+    completion = payload["laterals"][0]["completion_intervals"][0]["fields"].setdefault("Completion", {})
     completion["Completion Details"] = {"Completion Type": "Open Hole"}
     completion["OH Drilling Details"] = {
         "Mud PSD D10/D25/D40/D50/D75/D90": [10, 25, 40, 50, 75, 90]
@@ -92,7 +95,7 @@ def test_submit_multi_number_splits_into_columns(client, seeded_org, db_session,
     from db.models import Well
 
     well = db_session.get(Well, resp.json()["id"])
-    ci = well.completion_intervals[0]
+    ci = well.laterals[0].completion_intervals[0]
     assert float(ci.mud_psd_d10) == 10
     assert float(ci.mud_psd_d25) == 25
     assert float(ci.mud_psd_d40) == 40
@@ -117,6 +120,6 @@ def test_submit_yes_no_normalizes_to_boolean(client, seeded_org, db_session, mak
 def test_submit_requires_at_least_one_completion_interval(client, seeded_org, make_payload):
     _, token = seeded_org
     payload = make_payload()
-    payload["completion_intervals"] = []
+    payload["laterals"][0]["completion_intervals"] = []
     resp = client.post("/records", json=payload, headers=_auth(token))
     assert resp.status_code == 422

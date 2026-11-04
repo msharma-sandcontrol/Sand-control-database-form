@@ -9,10 +9,17 @@ form, the PostgreSQL schema, and the FastAPI backend's validation rules.
 web form  -->  FastAPI backend  -->  PostgreSQL
 ```
 
+A record is nested: a well has one or more laterals (just its main bore
+unless "Is this a Multilateral Well?" is Yes), each lateral has one or more
+completion intervals, and each interval has one or more sand bodies. Each
+level is sized by its own count field and **Apply** button; removing blocks
+that hold data asks first.
+
 The standalone form can save incomplete drafts as JSON or CSV and import
 either format later. Both files preserve entered values, comments, and the
-Completion Interval / Sand Body layout. Draft filenames end in _draft; validated
-exports end in _complete. The same status is recorded inside each file, and the
+Lateral / Completion Interval / Sand Body layout. Files are named after the
+well's anonymized ID (e.g. `XOM-I-00001_draft.json`); draft filenames end in
+_draft and validated exports end in _complete. The same status is recorded inside each file, and the
 API rejects files explicitly marked as drafts. Both file formats carry
 `schema_version: 0` while the schema is in development. The API requires that
 version and stores it with submitted records. Version 0 may evolve without a
@@ -57,7 +64,10 @@ the last value the user entered, so switching back restores its original digits;
 editing the converted number starts a new conversion chain. The API also returns
 database decimals as strings so readback does not lose digits through a JSON
 floating-point number. Sand-body Fluid Type selects Oil Bo or Gas Bg (for
-Condensate, Wet Gas, and Dry Gas) at row 144, with explicit ratio units. See
+Condensate, Wet Gas, and Dry Gas) at row 145, with explicit ratio units.
+Condensate, Wet Gas, and Dry Gas also hide the oil-only Bubble Point and Rs;
+Condensate shows Dew Point Pressure and CGR instead. The SI pressure unit is
+bar. See
 [the conversion table](docs/unit_conversion_review.md) for factors and reference
 conditions.
 

@@ -8,14 +8,14 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from backend.app.schemas.ingest import RecordIngest
-from backend.app.schemas.record_out import CompletionIntervalOut, RecordOut, SandBodyOut
+from backend.app.schemas.record_out import CompletionIntervalOut, LateralOut, RecordOut, SandBodyOut
 from db.mapping import build_record_out, flatten_bucket, parent_answers
-from db.models import CompletionInterval, Organization, SandBody, Well
+from db.models import CompletionInterval, Lateral, Organization, SandBody, Well
 
 
 def create_record(db: Session, org: Organization, payload: RecordIngest) -> Well:
-    """One DB transaction: well -> its completion_intervals -> their
-    sand_bodies, `ordinal` set to submission order at each level.
+    """One DB transaction: well -> its laterals -> their completion_intervals
+    -> their sand_bodies, `ordinal` set to submission order at each level.
     """
     well = Well(
         organization_id=org.id,
@@ -28,22 +28,31 @@ def create_record(db: Session, org: Organization, payload: RecordIngest) -> Well
     db.flush()  # assigns well.id for the FKs below
     well_answers = parent_answers(payload.well, "well")  # e.g. Well type for Sand Body units
 
-    for comp_ordinal, comp_payload in enumerate(payload.completion_intervals, start=1):
-        completion_interval = CompletionInterval(
+    for lateral_ordinal, lateral_payload in enumerate(payload.laterals, start=1):
+        lateral = Lateral(
             well_id=well.id,
-            ordinal=comp_ordinal,
-            **flatten_bucket(comp_payload.fields, scope="completion_interval"),
+            ordinal=lateral_ordinal,
+            **flatten_bucket(lateral_payload.fields, scope="lateral"),
         )
-        db.add(completion_interval)
-        db.flush()  # assigns completion_interval.id
+        db.add(lateral)
+        db.flush()  # assigns lateral.id
 
-        for sb_ordinal, sb_bucket in enumerate(comp_payload.sand_bodies, start=1):
-            sand_body = SandBody(
-                completion_interval_id=completion_interval.id,
-                ordinal=sb_ordinal,
-                **flatten_bucket(sb_bucket, scope="sand_body", inherited=well_answers),
+        for comp_ordinal, comp_payload in enumerate(lateral_payload.completion_intervals, start=1):
+            completion_interval = CompletionInterval(
+                lateral_id=lateral.id,
+                ordinal=comp_ordinal,
+                **flatten_bucket(comp_payload.fields, scope="completion_interval"),
             )
-            db.add(sand_body)
+            db.add(completion_interval)
+            db.flush()  # assigns completion_interval.id
+
+            for sb_ordinal, sb_bucket in enumerate(comp_payload.sand_bodies, start=1):
+                sand_body = SandBody(
+                    completion_interval_id=completion_interval.id,
+                    ordinal=sb_ordinal,
+                    **flatten_bucket(sb_bucket, scope="sand_body", inherited=well_answers),
+                )
+                db.add(sand_body)
 
     db.commit()
     db.refresh(well)
@@ -58,7 +67,8 @@ _WELL_STRUCTURAL_COLUMNS = {
     "id", "organization_id", "created_at", "updated_at", "submitted_at",
     "schema_version", "raw_payload",
 }
-_COMPLETION_STRUCTURAL_COLUMNS = {"id", "well_id", "ordinal", "created_at", "updated_at"}
+_LATERAL_STRUCTURAL_COLUMNS = {"id", "well_id", "ordinal", "created_at", "updated_at"}
+_COMPLETION_STRUCTURAL_COLUMNS = {"id", "lateral_id", "ordinal", "created_at", "updated_at"}
 _SAND_BODY_STRUCTURAL_COLUMNS = {"id", "completion_interval_id", "ordinal", "created_at", "updated_at"}
 
 
@@ -71,20 +81,30 @@ def build_record_response(well: Well) -> RecordOut:
     nested Category -> Subcategory -> Parameter -> value shape the form
     exports, via db.mapping.build_record_out().
     """
-    completion_intervals_out = []
-    for ci in well.completion_intervals:
-        sand_bodies_out = [
-            SandBodyOut(
-                ordinal=sb.ordinal,
-                fields=build_record_out(_row_columns(sb, _SAND_BODY_STRUCTURAL_COLUMNS), scope="sand_body"),
+    laterals_out = []
+    for lateral in well.laterals:
+        completion_intervals_out = []
+        for ci in lateral.completion_intervals:
+            sand_bodies_out = [
+                SandBodyOut(
+                    ordinal=sb.ordinal,
+                    fields=build_record_out(_row_columns(sb, _SAND_BODY_STRUCTURAL_COLUMNS), scope="sand_body"),
+                )
+                for sb in ci.sand_bodies
+            ]
+            completion_intervals_out.append(
+                CompletionIntervalOut(
+                    ordinal=ci.ordinal,
+                    fields=build_record_out(_row_columns(ci, _COMPLETION_STRUCTURAL_COLUMNS),
+                                            scope="completion_interval"),
+                    sand_bodies=sand_bodies_out,
+                )
             )
-            for sb in ci.sand_bodies
-        ]
-        completion_intervals_out.append(
-            CompletionIntervalOut(
-                ordinal=ci.ordinal,
-                fields=build_record_out(_row_columns(ci, _COMPLETION_STRUCTURAL_COLUMNS), scope="completion_interval"),
-                sand_bodies=sand_bodies_out,
+        laterals_out.append(
+            LateralOut(
+                ordinal=lateral.ordinal,
+                fields=build_record_out(_row_columns(lateral, _LATERAL_STRUCTURAL_COLUMNS), scope="lateral"),
+                completion_intervals=completion_intervals_out,
             )
         )
     return RecordOut(
@@ -96,5 +116,5 @@ def build_record_response(well: Well) -> RecordOut:
         record_status=(well.raw_payload or {}).get("record_status"),
         comments=(well.raw_payload or {}).get("comments"),
         well=build_record_out(_row_columns(well, _WELL_STRUCTURAL_COLUMNS), scope="well"),
-        completion_intervals=completion_intervals_out,
+        laterals=laterals_out,
     )

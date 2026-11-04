@@ -53,6 +53,10 @@ SAND_BODY_COLUMNS = [
     Column("oil_bubble_point_pb_unit", Text, nullable=True, comment="Unit for Oil Bubble Point (Pb)"),
     Column("solution_gas_ratio_rs", Numeric, nullable=True, comment="Solution Gas Ratio (Rs)"),
     Column("solution_gas_ratio_rs_unit", Text, nullable=True, comment="Unit for Solution Gas Ratio (Rs)"),
+    Column("dew_point_pressure_pd", Numeric, nullable=True, comment="Dew Point Pressure (Pd)"),
+    Column("dew_point_pressure_pd_unit", Text, nullable=True, comment="Unit for Dew Point Pressure (Pd)"),
+    Column("condensate_to_gas_ratio_cgr", Numeric, nullable=True, comment="Condensate-to-Gas Ratio (CGR)"),
+    Column("condensate_to_gas_ratio_cgr_unit", Text, nullable=True, comment="Unit for Condensate-to-Gas Ratio (CGR)"),
     Column("frac_gradient", Numeric, nullable=True, comment="Frac gradient"),
     Column("frac_gradient_unit", Text, nullable=True, comment="Unit for Frac gradient"),
 ]

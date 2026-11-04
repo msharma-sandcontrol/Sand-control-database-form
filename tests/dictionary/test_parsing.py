@@ -29,17 +29,23 @@ def test_safe_literal_invalid_returns_none():
     assert safe_literal(None) is None
 
 
+# One parsed {"Decimal": {"min": 0}} sub-value of a multi-number cell.
+_DECIMAL_MIN_0 = {
+    "type": "Decimal", "options": None, "min": 0, "max": None, "required": False,
+    "pattern": None, "length": None, "mask": None, "same_code_as": None,
+}
+
 def test_parse_validation_cell_bare_type():
     assert parse_validation_cell('{"Decimal"}') == {
         "type": "Decimal", "options": None, "min": None, "max": None, "required": False, "pattern": None,
-        "length": None,
+        "length": None, "mask": None, "same_code_as": None,
     }
 
 
 def test_parse_validation_cell_with_modifiers():
     assert parse_validation_cell('{"Whole number": {"min": 1, "max": 10}}') == {
         "type": "Whole number", "options": None, "min": 1, "max": 10, "required": False, "pattern": None,
-        "length": None,
+        "length": None, "mask": None, "same_code_as": None,
     }
 
 
@@ -52,7 +58,7 @@ def test_parse_validation_cell_required():
 def test_parse_validation_cell_list():
     assert parse_validation_cell('{"List": ["Zebra", "Apple", "Mango"]}') == {
         "type": "List", "options": ["Zebra", "Apple", "Mango"], "min": None, "max": None, "required": False,
-        "pattern": None, "length": None,
+        "pattern": None, "length": None, "mask": None, "same_code_as": None,
     }
 
 
@@ -61,7 +67,7 @@ def test_parse_validation_cell_list_options_nested():
     # modifiers (e.g. "required") can sit alongside them.
     assert parse_validation_cell('{"List": {"options": ["Zebra", "Apple"], "required": True}}') == {
         "type": "List", "options": ["Zebra", "Apple"], "min": None, "max": None, "required": True,
-        "pattern": None, "length": None,
+        "pattern": None, "length": None, "mask": None, "same_code_as": None,
     }
 
 
@@ -70,14 +76,14 @@ def test_parse_validation_cell_text_with_length_and_pattern():
     # the anonymized well identification number.
     assert parse_validation_cell('{"Text": {"length": 7, "pattern": "alphanumeric", "required": True}}') == {
         "type": "Text", "options": None, "min": None, "max": None, "required": True,
-        "pattern": "alphanumeric", "length": 7,
+        "pattern": "alphanumeric", "length": 7, "mask": None, "same_code_as": None,
     }
 
 
 def test_parse_validation_cell_any_value():
     assert parse_validation_cell('{"Any Value": {}}') == {
         "type": "Any Value", "options": None, "min": None, "max": None, "required": False, "pattern": None,
-        "length": None,
+        "length": None, "mask": None, "same_code_as": None,
     }
 
 
@@ -91,9 +97,9 @@ def test_parse_validation_cell_multi_number_malformed_bracket_shape():
     # syntax on their own, recovered segment by segment.
     specs = parse_validation_cell('{["Decimal": {"min": 0}, "Decimal": {"min": 0}, "Decimal": {"min": 0}]}')
     assert specs == [
-        {"type": "Decimal", "options": None, "min": 0, "max": None, "required": False, "pattern": None, "length": None},
-        {"type": "Decimal", "options": None, "min": 0, "max": None, "required": False, "pattern": None, "length": None},
-        {"type": "Decimal", "options": None, "min": 0, "max": None, "required": False, "pattern": None, "length": None},
+        _DECIMAL_MIN_0,
+        _DECIMAL_MIN_0,
+        _DECIMAL_MIN_0,
     ]
 
 
@@ -102,10 +108,10 @@ def test_parse_validation_cell_multi_number_well_formed_list_shape():
     # malformed wrapper the current sheet happens to use.
     specs = parse_validation_cell('[{"Decimal": {"min": 0}}, {"Whole number": {"min": 1}}]')
     assert specs == [
-        {"type": "Decimal", "options": None, "min": 0, "max": None, "required": False, "pattern": None, "length": None},
+        _DECIMAL_MIN_0,
         {
             "type": "Whole number", "options": None, "min": 1, "max": None, "required": False,
-            "pattern": None, "length": None,
+            "pattern": None, "length": None, "mask": None, "same_code_as": None,
         },
     ]
 

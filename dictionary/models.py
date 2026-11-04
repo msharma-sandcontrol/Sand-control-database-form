@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 WELL_SCOPE = "Well"
+LATERAL_SCOPE = "Lateral {id}"
 COMPLETION_SCOPE = "Completion Interval {id}"
 SAND_BODY_SCOPE = "Sand Body {id}"
 
@@ -36,6 +37,12 @@ class FieldSpec:
     min_length: int | None = None
     max_length: int | None = None
     pattern: str | None = None  # HTML5-compatible regex, e.g. r"^[A-Za-z0-9]+$"
+    # A fixed-format ID such as "AAA-I-#####" (see dictionary/masks.py). The
+    # form draws one box per letter/digit run; `pattern` is derived from it.
+    mask: str | None = None
+    # Another Parameter (same scope) whose mask's leading letter code this
+    # field's code must equal when both are filled in.
+    same_code_as: str | None = None
     multi_labels: list[str] = field(default_factory=list)
     # Parallel to multi_labels -- per-sub-value min/max pulled from that
     # sub-value's own spec (each sub-value in a multi-number cell carries its

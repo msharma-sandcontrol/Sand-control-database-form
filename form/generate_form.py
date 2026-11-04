@@ -18,10 +18,12 @@ See CLAUDE.md for the full data model. Key points this generator relies on:
   next to every field, zero-padded to 3 digits (e.g. "001", "025", "114"),
   so a submitted/rendered field can be cross-referenced back to its exact
   spreadsheet row.
-- `Scope` is one of "Well", "Completion Interval {id}", "Sand Body {id}" --
-  a well has one or more Completion Intervals, each of which has one or more
-  Sand Bodies. The form renders two independently repeatable, nested block
-  levels for these.
+- `Scope` is one of "Well", "Lateral {id}", "Completion Interval {id}",
+  "Sand Body {id}" -- a well has one or more Laterals (just its main bore
+  unless it is multilateral), each with one or more Completion Intervals,
+  each with one or more Sand Bodies. The form renders three nested,
+  repeatable block levels, each sized by its counter's Apply button (see
+  dictionary/structure.py).
 - `Data Validation`, `Affected Subcategory` and `Affected Parameter` cells are
   written as Python-literal-safe text (parsed with ast.literal_eval, tolerant
   of JSON's lowercase true/false/null). Data Validation cells are a type name
@@ -54,6 +56,7 @@ if str(REPO_ROOT) not in sys.path:
 from dictionary import (  # noqa: E402
     COMPLETION_SCOPE,
     CURRENT_SCHEMA_VERSION,
+    LATERAL_SCOPE,
     SAND_BODY_SCOPE,
     WELL_SCOPE,
     FieldSpec,
@@ -64,12 +67,12 @@ from dictionary import (  # noqa: E402
     load_dictionary,
 )
 from dictionary.conditional_fields import GAS_FVF, OIL_FVF, expand_conditional_rows  # noqa: E402
+from dictionary.masks import mask_tokens  # noqa: E402
+from dictionary.structure import LEVELS, MULTILATERAL_PARAMETER, level_limits  # noqa: E402
 from dictionary.units import BASIS_DRIVERS, basis_driver, choices_for  # noqa: E402
 
 DEFAULT_INPUT = REPO_ROOT / "MASTER.xlsx"
 DEFAULT_OUTPUT = Path(__file__).resolve().parent / "sand_control_form.html"
-DEFAULT_MAX_COMPLETION = 10
-DEFAULT_MAX_SAND_BODY = 10
 # Optional expiration for a form emailed out as a standalone file. When set
 # (here or with --expires-on YYYY-MM-DD), the date is baked in at generation
 # time and checked by the browser on every load, which then locks the form.
@@ -82,28 +85,15 @@ WELL_ZONE_CLASS = {
     "Well Specific Information": "zone-well",
 }
 
-# These two counter Parameters get an "Apply" button next to their input so
-# typing a number can actually grow the corresponding repeater. Matched by
-# exact Parameter name -- if the dictionary renames either field, it just
-# reverts to a plain Number input (no crash, no special handling lost).
-COUNTER_ROLES = {
-    "Number of Completion Intervals": "apply-completion",
-    "Number of sand bodies": "apply-sand-body",
-}
+# Each level's counter gets an "Apply" button that adds or removes blocks to
+# match it -- the only way to change a level's size. A counter whose minimum
+# is 1 starts at 1, matching the one block every level always has.
+COUNTER_ROLES = {level.counter: level.key for level in LEVELS}
 
-# The Well-scope Parameters whose values, joined in this order, name the
-# exported files, so a reviewer can tell one record from another without
-# opening it. The identification number is carried alongside the name because
-# it is the constrained one (7+ alphanumeric), which keeps the filename
-# distinct even when two submissions choose the same free-text label.
-#
-# Matched by exact Parameter name, same convention as COUNTER_ROLES. A missing
-# or unusable name becomes "Unnamed"; the anonymized ID is included when
-# available, which also gives partially filled drafts a recognizable filename.
-EXPORT_NAME_PARAMS = (
-    "Well name (anonymized)",
-    "Well identification number (anonymized)",
-)
+# The masked Well-scope ID (e.g. XOM-I-00001) names exported files, so a
+# reviewer can tell records apart without opening them. Until it is complete
+# the file is named "Unnamed". Matched by exact Parameter name.
+EXPORT_NAME_PARAM = "Well identification number (anonymized)"
 
 
 # --------------------------------------------------------------------------
@@ -115,11 +105,14 @@ EXPORT_NAME_PARAMS = (
 def build_model(rows: list[ParamRow]) -> dict:
     rows = expand_conditional_rows(rows)
     well_rows = [r for r in rows if r.scope == WELL_SCOPE]
+    lateral_rows = [r for r in rows if r.scope == LATERAL_SCOPE]
     completion_rows = [r for r in rows if r.scope == COMPLETION_SCOPE]
     sand_body_rows = [r for r in rows if r.scope == SAND_BODY_SCOPE]
 
     return {
+        "limits": level_limits(rows),
         "well": group_by_category_subcategory(well_rows),
+        "lateral": group_by_category_subcategory(lateral_rows),
         "completion": group_by_category_subcategory(completion_rows),
         "sand_body": group_by_category_subcategory(sand_body_rows),
         **build_visibility_rules(rows),
@@ -182,6 +175,8 @@ def render_control(row: ParamRow, spec: FieldSpec) -> str:
         return f'<select data-param="{dp}" data-kind="select"{conditional}{req_attr}>{"".join(options)}</select>'
     if spec.kind == "number":
         attrs = ""
+        if row.parameter in COUNTER_ROLES and spec.min_value == 1:
+            attrs += ' value="1"'
         if spec.min_value is not None:
             attrs += f' min="{spec.min_value}"'
         if spec.max_value is not None:
@@ -204,6 +199,8 @@ def render_control(row: ParamRow, spec: FieldSpec) -> str:
             items.append(f'<span class="mn-item"><span class="mn-label">{esc(lbl)}</span>'
                          f'<input type="number" step="any"{item_attrs} class="mn-input"></span>')
         return f'<div class="multi-number" data-param="{dp}" data-kind="multi_number">{"".join(items)}</div>'
+    if spec.mask:
+        return render_masked(row, spec)
     if spec.kind == "text" and (spec.min_length is not None or spec.max_length is not None or spec.pattern):
         attrs = ""
         if spec.min_length is not None:
@@ -215,6 +212,30 @@ def render_control(row: ParamRow, spec: FieldSpec) -> str:
         return (f'<input type="text"{attrs}{req_attr} data-param="{dp}" '
                 f'data-kind="text" placeholder="Enter text">')
     return f'<textarea rows="2"{req_attr} data-param="{dp}" data-kind="text" placeholder="Enter text"></textarea>'
+
+
+def render_masked(row: ParamRow, spec: FieldSpec) -> str:
+    """One box per letter/digit run of the mask with the fixed text between,
+    e.g. [XOM]-I-[00001]. The JS joins the boxes into the saved value."""
+    req_attr = " required" if spec.required else ""
+    parts = []
+    for token in mask_tokens(spec.mask):
+        if "literal" in token:
+            parts.append(f'<span class="mask-lit">{esc(token["literal"])}</span>')
+            continue
+        n = token["length"]
+        if token["slot"] == "A":
+            attrs = f'pattern="[A-Z]{{{n}}}" placeholder="{"ABC"[:n] if n <= 3 else "A" * n}" autocapitalize="characters"'
+            label = "letters"
+        else:
+            attrs = f'pattern="[0-9]{{{n}}}" placeholder="{"0" * n}" inputmode="numeric"'
+            label = "digits"
+        parts.append(f'<input type="text" class="mask-seg" data-slot="{token["slot"]}" maxlength="{n}" '
+                     f'style="--n:{n}" {attrs} autocomplete="off" spellcheck="false"{req_attr} '
+                     f'aria-label="{esc(row.parameter)}, {n} {label}">')
+    same = f' data-same-code-as="{esc(spec.same_code_as)}"' if spec.same_code_as else ""
+    return (f'<span class="masked" data-param="{esc(row.parameter)}" data-kind="masked" '
+            f'data-mask="{esc(spec.mask)}"{same}>{"".join(parts)}</span>')
 
 
 def render_unit(row: ParamRow) -> str:
@@ -286,9 +307,9 @@ def render_sand_body_template(model: dict) -> str:
         '<template class="sand-body-template">'
         '<section class="interval-instance sand-body-instance">'
         '<div class="interval-banner">'
-        '<h3 class="zone-title">COMPLETION INTERVAL <span class="completion-index"></span>'
+        '<h3 class="zone-title"><span class="lateral-prefix">LATERAL <span class="lateral-index"></span> - </span>'
+        'COMPLETION INTERVAL <span class="completion-index"></span>'
         ' - SAND BODY <span class="interval-index"></span></h3>'
-        '<button type="button" class="remove-interval-btn">Remove</button>'
         '</div>'
         f'{groups}'
         '</section>'
@@ -300,21 +321,40 @@ def render_completion_template(model: dict) -> str:
     own_groups = render_flat_groups(model["completion"], model)
     sand_body_tpl = render_sand_body_template(model)
     return (
-        '<template id="completion-interval-template">'
+        '<template class="completion-interval-template">'
         '<section class="interval-instance completion-instance">'
         '<div class="interval-banner">'
-        '<h2 class="zone-title">COMPLETION INTERVAL <span class="interval-index"></span></h2>'
-        '<button type="button" class="remove-interval-btn">Remove</button>'
+        '<h2 class="zone-title"><span class="lateral-prefix">LATERAL <span class="lateral-index"></span> - </span>'
+        'COMPLETION INTERVAL <span class="interval-index"></span></h2>'
         '</div>'
         f'<div class="own-fields">{own_groups}</div>'
         '<div class="sand-body-nest">'
-        '<div class="sand-bodies-toolbar">'
-        '<h3>Sand Bodies</h3>'
-        '<button type="button" class="add-sand-body-btn">+ Add Sand Body</button>'
-        '</div>'
+        '<h3 class="nest-heading">Sand Bodies</h3>'
         '<div class="sand-bodies-container"></div>'
         '</div>'
         f'{sand_body_tpl}'
+        '</section>'
+        '</template>'
+    )
+
+
+def render_lateral_template(model: dict) -> str:
+    """A well that is not multilateral shows its single lateral without the
+    banner, so the form reads as before: lateral details, then intervals."""
+    own_groups = render_flat_groups(model["lateral"], model)
+    completion_tpl = render_completion_template(model)
+    return (
+        '<template id="lateral-template">'
+        '<section class="interval-instance lateral-instance">'
+        '<div class="interval-banner">'
+        '<h2 class="zone-title">LATERAL <span class="interval-index"></span></h2>'
+        '</div>'
+        f'<div class="own-fields">{own_groups}</div>'
+        '<div class="completion-nest">'
+        '<h2 class="nest-heading">Completion Intervals</h2>'
+        '<div class="completion-intervals-container"></div>'
+        '</div>'
+        f'{completion_tpl}'
         '</section>'
         '</template>'
     )
@@ -329,6 +369,8 @@ CSS = """
   --even-header: #f4b183; --even-row: #fbe5d6;
   --sb-odd-header: #b4a7d6; --sb-odd-row: #ede7f6;
   --sb-even-header: #ea9999; --sb-even-row: #fbe4e4;
+  --lat-odd-header: #9fd8d2; --lat-odd-row: #e3f4f2;
+  --lat-even-header: #d6c4b4; --lat-even-row: #f3ece6;
   --banner-text: #002060;
   --ink: #1f2328; --border: #c9c9c9;
 }
@@ -348,6 +390,24 @@ main { max-width: 1280px; margin: 1.5rem auto; padding: 0 1rem; }
 .subcat-title { margin: 0; padding: .45rem 1rem; font-size: .95rem; font-weight: bold; }
 .zone-general .subcat-title { background: var(--general-header); }
 .zone-well .subcat-title { background: var(--well-header); }
+
+.lateral-instance { margin-bottom: 1.5rem; }
+.lateral-instance > .interval-banner { display: none; }
+#sand-form.multi-lateral .lateral-instance { border: 2px solid var(--border); border-radius: 8px; overflow: hidden; background: #fff; }
+#sand-form.multi-lateral .lateral-instance > .interval-banner { display: flex; }
+#sand-form.multi-lateral .lateral-instance > .own-fields, #sand-form.multi-lateral .completion-nest { margin: 0 .75rem; }
+#sand-form.multi-lateral .completion-nest { padding-bottom: .25rem; }
+.lateral-instance.interval-odd > .interval-banner .zone-title { background: var(--lat-odd-header); }
+.lateral-instance.interval-even > .interval-banner .zone-title { background: var(--lat-even-header); }
+.lateral-instance > .own-fields { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: #fff; margin: .75rem 0 0; }
+.lateral-instance.interval-odd > .own-fields .subcat-title { background: var(--lat-odd-header); }
+.lateral-instance.interval-even > .own-fields .subcat-title { background: var(--lat-even-header); }
+.lateral-instance.interval-odd > .own-fields .field-row { background: var(--lat-odd-row); }
+.lateral-instance.interval-even > .own-fields .field-row { background: var(--lat-even-row); }
+.lateral-prefix { display: none; }
+#sand-form.multi-lateral .lateral-prefix { display: inline; }
+.nest-heading { margin: 1.25rem 0 .75rem; font-size: 1.1rem; }
+.sand-body-nest .nest-heading { margin: 0 0 .6rem; font-size: .95rem; }
 
 .completion-instance { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: #fff; margin-bottom: 1.25rem; }
 .completion-instance.interval-odd > .interval-banner .zone-title { background: var(--odd-header); }
@@ -404,19 +464,12 @@ textarea { resize: vertical; }
 .mn-item { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; }
 .mn-label { font-size: .68rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 input.mn-input { padding: .35rem .25rem; text-align: center; }
+.masked { display: flex; align-items: center; gap: .3rem; }
+.masked input.mask-seg { width: calc(var(--n) * 1.15ch + 1.4rem); font-family: "Consolas", monospace; letter-spacing: .08em; text-align: center; }
+.mask-lit { font-family: "Consolas", monospace; font-weight: bold; }
 .interval-banner { display: flex; align-items: center; justify-content: space-between; }
 .interval-banner .zone-title { flex: 1; }
-.remove-interval-btn { margin-right: 1rem; background: #b23; color: #fff; border: none; border-radius: 4px; padding: .3rem .7rem; cursor: pointer; font-size: .8rem; }
-.remove-interval-btn:hover { background: #8f1c1c; }
-#completion-intervals-toolbar { display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0 .75rem; }
-#completion-intervals-toolbar h2 { margin: 0; font-size: 1.1rem; }
-#add-completion-btn { background: var(--header-bg); color: #fff; border: none; border-radius: 4px; padding: .5rem 1rem; cursor: pointer; font-size: .9rem; }
-#add-completion-btn:disabled { background: #9aa; cursor: not-allowed; }
 .sand-body-nest { margin: .75rem 0 0; padding: .5rem 0 .75rem 1rem; border-left: 3px solid var(--border); }
-.sand-bodies-toolbar { display: flex; justify-content: space-between; align-items: center; margin: 0 1rem .6rem 0; }
-.sand-bodies-toolbar h3 { margin: 0; font-size: .95rem; }
-.add-sand-body-btn { background: var(--header-bg); color: #fff; border: none; border-radius: 4px; padding: .4rem .8rem; cursor: pointer; font-size: .82rem; }
-.add-sand-body-btn:disabled { background: #9aa; cursor: not-allowed; }
 .sand-bodies-container { display: flex; flex-direction: column; gap: .75rem; }
 .export-bar { position: sticky; z-index: 20; bottom: 0; background: #fff; border-top: 2px solid var(--header-bg); padding: .75rem 1rem; display: flex; flex-wrap: wrap; gap: .75rem; justify-content: flex-end; max-width: 1280px; margin: 0 auto; }
 #import-status { flex-basis: 100%; margin: 0; font-size: .85rem; text-align: right; }
@@ -431,17 +484,19 @@ input.mn-input { padding: .35rem .25rem; text-align: center; }
 .file-action-options button { white-space: nowrap; text-align: left; }
 """
 
-JS = """
+JS = r"""
 (function () {
   const SCHEMA_VERSION = __SCHEMA_VERSION__;
-  const MAX_COMPLETION = __MAX_COMPLETION__;
-  const MAX_SAND_BODY = __MAX_SAND_BODY__;
+  // Caps per level, read from each counter's workbook max (dictionary/structure.py).
+  const LIMITS = __LIMITS__;
+  const MULTILATERAL = __MULTILATERAL__;
   const EXPIRES_ON = __EXPIRES_ON__;
-  const EXPORT_NAME_PARAMS = __EXPORT_NAME_PARAMS__;
+  const EXPORT_NAME_PARAM = __EXPORT_NAME_PARAM__;
   const CHOICE_DISPLAY = __CHOICE_DISPLAY__;
   const OIL_FVF = __OIL_FVF__;
   const GAS_FVF = __GAS_FVF__;
   const UNIT_BASIS = __UNIT_BASIS__;
+  const LEVEL_LABELS = { lateral: 'Lateral', completion_interval: 'Completion Interval', sand_body: 'Sand Body' };
   const wellSection = document.getElementById('well-section');
   const sandForm = document.getElementById('sand-form');
   const unitSystemSelect = document.getElementById('unit-system');
@@ -464,18 +519,45 @@ JS = """
     return;
   }
 
+  // ---- block structure: Well > Lateral > Completion Interval > Sand Body ----
+  function lateralBlocks() {
+    return Array.from(document.querySelectorAll('#laterals-container > .lateral-instance'));
+  }
+  function completionBlocks(lateral) {
+    return Array.from(lateral.querySelectorAll(
+      ':scope > .completion-nest > .completion-intervals-container > .completion-instance'));
+  }
+  function sandBodyBlocks(completion) {
+    return Array.from(completion.querySelectorAll(
+      ':scope > .sand-body-nest > .sand-bodies-container > .sand-body-instance'));
+  }
+  // The fields that belong to a block itself, without its nested children.
+  function ownFields(section) {
+    return section.classList.contains('sand-body-instance') ? section : section.querySelector(':scope > .own-fields');
+  }
+  // The block (or the well section) a control or field row belongs to.
+  function blockOf(el) {
+    return el.closest('.interval-instance') || wellSection;
+  }
+
+  // A rule's trigger is always a field of the target's own block: Sand Body
+  // 2's Fluid Type, never Sand Body 1's. Searching a parent's whole subtree
+  // would return the first nested block's answer instead.
   function findParamField(root, paramName) {
-    return root.querySelector(`[data-param="${CSS.escape(paramName)}"]`);
+    const block = root === wellSection ? wellSection :
+      (root.matches('.interval-instance') ? root : blockOf(root));
+    return Array.from(block.querySelectorAll(`[data-param="${CSS.escape(paramName)}"]`))
+      .find((el) => blockOf(el) === block) || null;
   }
   function getControlValue(el) {
     return (el.tagName === 'SELECT' || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') ? el.value : '';
   }
-  function exprMatches(root, expr) {
+  function exprMatches(block, expr) {
     return expr.split('||').some((rule) => {
       const i = rule.indexOf('=');
       const param = rule.slice(0, i);
       const value = rule.slice(i + 1);
-      const trigger = findParamField(root, param);
+      const trigger = findParamField(block, param);
       return trigger && getControlValue(trigger) === value;
     });
   }
@@ -483,7 +565,7 @@ JS = """
     root.querySelectorAll('select[data-options-by]').forEach((control) => {
       const config = JSON.parse(control.dataset.optionsBy);
       const [triggerName, byValue] = Object.entries(config)[0];
-      const trigger = findParamField(root, triggerName);
+      const trigger = findParamField(blockOf(control), triggerName);
       const choices = byValue[trigger ? getControlValue(trigger) : ''] || [];
       const current = control.value;
       const existing = Array.from(control.options).slice(1).map((option) => option.value);
@@ -520,13 +602,119 @@ JS = """
     input.dataset.exactValue = '';
     input.value = '';
   }
+
+  // ---- masked IDs, e.g. [XOM]-I-[00001] ----
+  // The workbook mask ("AAA-I-#####") becomes one box per letter/digit run
+  // with the fixed text between them. The saved value is the joined string,
+  // so a draft keeps a half-typed ID ("XO-I-") and the API sees one value.
+  function maskTokens(mask) {
+    return (mask.match(/A+|#+|[^A#]+/g) || []).map((text) =>
+      text[0] === 'A' || text[0] === '#' ? { slot: text[0], length: text.length } : { literal: text });
+  }
+  function maskSegments(control) { return Array.from(control.querySelectorAll('.mask-seg')); }
+  function readMasked(control) {
+    const segments = maskSegments(control).map((input) => input.value);
+    if (segments.every((value) => value === '')) return null;
+    let i = 0;
+    return maskTokens(control.dataset.mask).map((token) => token.literal ?? segments[i++]).join('');
+  }
+  // The segments of a saved value, or null if it does not fit the mask
+  // (a partial segment is fine; a wrong character or fixed text is not).
+  function parseMasked(mask, value) {
+    if (typeof value !== 'string') return null;
+    const segments = [];
+    let rest = value;
+    for (const token of maskTokens(mask)) {
+      if (token.literal !== undefined) {
+        if (!rest.startsWith(token.literal)) return null;
+        rest = rest.slice(token.literal.length);
+      } else {
+        const pattern = new RegExp('^' + (token.slot === 'A' ? '[A-Z]' : '[0-9]') + '{0,' + token.length + '}');
+        const segment = rest.match(pattern)[0];
+        segments.push(segment);
+        rest = rest.slice(segment.length);
+      }
+    }
+    return rest === '' ? segments : null;
+  }
+  function maskComplete(control) {
+    return maskSegments(control).every((input) => input.value.length === input.maxLength);
+  }
+  function maskCode(control) {
+    const first = maskSegments(control)[0];
+    return first && first.dataset.slot === 'A' && maskComplete(control) ? first.value : null;
+  }
+  // An optional ID must be complete or blank, and a same_code_as ID must
+  // share the other ID's company code. Native validity carries both, so a
+  // completed export stops on the offending box with this message.
+  function syncMaskValidity() {
+    sandForm.querySelectorAll('[data-kind="masked"]').forEach((control) => {
+      const segments = maskSegments(control);
+      segments.forEach((input) => input.setCustomValidity(''));
+      const filled = segments.some((input) => input.value !== '');
+      if (filled && !maskComplete(control)) {
+        const short = segments.find((input) => input.value.length !== input.maxLength);
+        short.setCustomValidity('Complete this ID (' + control.dataset.mask + ') or leave it blank.');
+        return;
+      }
+      const otherName = control.dataset.sameCodeAs;
+      if (!otherName || !filled) return;
+      const other = findParamField(blockOf(control), otherName);
+      const ownCode = maskCode(control), otherCode = other && maskCode(other);
+      if (ownCode && otherCode && ownCode !== otherCode) {
+        segments[0].setCustomValidity('The company code must match the ' + otherName + ' (' + otherCode + ').');
+      }
+    });
+  }
+  function setMasked(control, value) {
+    const segments = parseMasked(control.dataset.mask, value) || [];
+    maskSegments(control).forEach((input, i) => { input.value = segments[i] || ''; });
+  }
+  function cleanSegment(input) {
+    const cleaned = input.dataset.slot === 'A' ? input.value.toUpperCase().replace(/[^A-Z]/g, '') :
+      input.value.replace(/[^0-9]/g, '');
+    if (cleaned !== input.value) input.value = cleaned.slice(0, input.maxLength);
+  }
+  sandForm.addEventListener('keydown', (event) => {
+    const input = event.target;
+    if (!input.matches('.mask-seg') || event.key !== 'Backspace' || input.value !== '') return;
+    const segments = maskSegments(input.closest('[data-kind="masked"]'));
+    const previous = segments[segments.indexOf(input) - 1];
+    if (previous) { event.preventDefault(); previous.focus(); }
+  });
+  sandForm.addEventListener('paste', (event) => {
+    const input = event.target;
+    if (!input.matches('.mask-seg')) return;
+    const control = input.closest('[data-kind="masked"]');
+    const text = (event.clipboardData.getData('text') || '').trim().toUpperCase();
+    const segments = parseMasked(control.dataset.mask, text);
+    // A whole pasted ID (XOM-I-00001) fills every box; anything else is
+    // pasted into this box alone and cleaned by the input handler.
+    if (!segments || !maskTokens(control.dataset.mask).some((token) => token.literal && text.includes(token.literal))) return;
+    event.preventDefault();
+    maskSegments(control).forEach((segment, i) => { segment.value = segments[i] || ''; });
+    syncMaskValidity();
+  });
+
   sandForm.addEventListener('input', (event) => {
-    if (event.target.matches('input[type="number"]')) {
+    const target = event.target;
+    if (target.matches('.mask-seg')) {
+      cleanSegment(target);
+      if (target.value.length === target.maxLength) {
+        const segments = maskSegments(target.closest('[data-kind="masked"]'));
+        const next = segments[segments.indexOf(target) + 1];
+        if (next && document.activeElement === target) next.focus();
+      }
+      syncMaskValidity();
+      return;
+    }
+    if (target.matches('input[type="number"]')) {
       // A user edit starts a new conversion chain. Unit switches in that
       // chain always use this typed value as their source, so switching back
       // restores it exactly instead of accumulating floating-point roundoff.
-      clearConversionSource(event.target);
-      event.target.dataset.exactValue = event.target.value;
+      clearConversionSource(target);
+      target.dataset.exactValue = target.value;
+      if (target.closest('.field-row').querySelector('.apply-count-btn')) refreshCounterValidity();
     }
   });
   sandForm.addEventListener('focusin', (event) => {
@@ -545,6 +733,7 @@ JS = """
       control.querySelectorAll('input').forEach(clearNumericValue);
       return;
     }
+    if (control.dataset.kind === 'masked') { maskSegments(control).forEach((input) => { input.value = ''; }); return; }
     if (control.dataset.kind === 'number') { clearNumericValue(control); return; }
     control.value = '';
   }
@@ -567,9 +756,8 @@ JS = """
   // (for example, the required offshore Water depth field on an Onshore
   // record) keeps failing reportValidity() forever. Because the browser can't
   // focus an unrendered control to show its message, exports die silently.
-  // So the same
-  // pass that hides a field also disables its controls, and re-enables them
-  // when the field comes back.
+  // So the same pass that hides a field also disables its controls, and
+  // re-enables them when the field comes back.
   //
   // Hidden-ness must be read from the whole ancestor chain rather than the
   // element's own style: a field row can have its own satisfied show-if rule
@@ -582,21 +770,23 @@ JS = """
     return false;
   }
   // Buttons are deliberately excluded: they're barred from constraint
-  // validation anyway, and the repeaters own their disabled state (an
-  // "+ Add ..." button disabled at max count must stay disabled).
+  // validation anyway.
   function syncValidationExemptions(root) {
     root.querySelectorAll('input, select, textarea').forEach((control) => {
       control.disabled = isRuleHidden(control);
     });
   }
+  // Each rule is matched against its own block's answers (see findParamField),
+  // so evaluating a parent's subtree also refreshes its nested blocks correctly.
   function evaluateVisibility(root) {
     refreshConditionalOptions(root);
     root.querySelectorAll('[data-show-if], [data-hide-if]').forEach((el) => {
+      const block = blockOf(el);
       let visible = true;
       const showExpr = el.getAttribute('data-show-if');
-      if (showExpr) visible = exprMatches(root, showExpr);
+      if (showExpr) visible = exprMatches(block, showExpr);
       const hideExpr = el.getAttribute('data-hide-if');
-      if (visible && hideExpr && exprMatches(root, hideExpr)) visible = false;
+      if (visible && hideExpr && exprMatches(block, hideExpr)) visible = false;
       el.style.display = visible ? '' : 'none';
       if (!visible) resetHiddenControls(el);
     });
@@ -732,132 +922,193 @@ JS = """
     const si = systems.every((system) => system === 'SI' || system === 'both');
     unitSystemSelect.value = field && si ? lastBulkSystem : (field ? 'Field' : (si ? 'SI' : 'Custom'));
   }
-  sandForm.addEventListener('change', (event) => {
-    if (event.target.dataset.param === 'Fluid Type') {
-      reportBasisChange('Fluid Type', syncBasisUnits(event.target.closest('.sand-body-instance')));
-      return;
-    }
-    if (!event.target.matches('select.unit-select')) return;
-    setFieldUnit(event.target, event.target.value);
-    updateTopUnitIndicator();
-  });
   unitSystemSelect.addEventListener('change', () => {
     lastBulkSystem = unitSystemSelect.value;
     applyBulkUnits(sandForm, lastBulkSystem);
     updateTopUnitIndicator();
   });
 
-  function setupRepeater({ container, template, addBtn, maxCount, labelSingular, onAdd }) {
-    let count = 0;
-
-    function renumber() {
-      let i = 0;
-      Array.from(container.children).forEach((section) => {
-        i += 1;
-        section.classList.remove('interval-odd', 'interval-even');
-        section.classList.add(i % 2 === 1 ? 'interval-odd' : 'interval-even');
-        const idxEl = section.querySelector(':scope > .interval-banner .interval-index');
-        if (idxEl) idxEl.textContent = i;
-        section.dataset.intervalIndex = i;
-        const completionIdxEl = section.querySelector(':scope > .interval-banner .completion-index');
-        if (completionIdxEl) completionIdxEl.textContent = section.closest('.completion-instance').dataset.intervalIndex;
-        // Only a Completion Interval renumbers its nested Sand Body parent labels.
-        // Running this from a Sand Body repeater would overwrite the parent index
-        // with that body's own index (e.g. Interval 1 / Body 2 became 2 / 2).
-        if (section.classList.contains('completion-instance')) {
-          section.querySelectorAll('.sand-body-instance > .interval-banner .completion-index')
-            .forEach((el) => { el.textContent = i; });
-        }
-      });
-      count = i;
-      addBtn.disabled = count >= maxCount;
-      addBtn.textContent = count >= maxCount ? `Maximum ${maxCount} reached` : `+ Add ${labelSingular}`;
-    }
-
-    function add() {
-      if (count >= maxCount) return null;
-      const node = template.content.cloneNode(true);
-      const section = node.querySelector('.interval-instance');
-      applyBulkUnits(section, lastBulkSystem);
-      const removeBtn = section.querySelector(':scope > .interval-banner .remove-interval-btn');
-      removeBtn.addEventListener('click', () => {
-        if (count <= 1) {
-          alert(`At least one ${labelSingular} is required and cannot be removed.`);
-          return;
-        }
-        section.remove();
-        renumber();
-        updateTopUnitIndicator();
-      });
-      section.addEventListener('change', () => evaluateVisibility(section));
-      container.appendChild(node);
-      renumber();
-      evaluateVisibility(section);
-      if (onAdd) onAdd(section);
-      syncBasisUnits(section);
-      updateTopUnitIndicator();
-      return section;
-    }
-
-    function removeLast() {
-      if (count <= 1) return;
-      const last = container.lastElementChild;
-      if (!last) return;
-      last.remove();
-      renumber();
-      updateTopUnitIndicator();
-    }
-
-    addBtn.addEventListener('click', add);
-    renumber();
-    return { add, removeLast, get count() { return count; } };
+  // ---- repeaters: one counter + Apply per level is the only control ----
+  function makeRepeater({ container, template, level, onAdd }) {
+    const repeater = {
+      level,
+      get count() { return container.children.length; },
+      blocks() { return Array.from(container.children); },
+      add() {
+        if (repeater.count >= LIMITS[level]) return null;
+        const node = template.content.cloneNode(true);
+        const section = node.querySelector('.interval-instance');
+        applyBulkUnits(section, lastBulkSystem);
+        container.appendChild(node);
+        if (onAdd) onAdd(section);
+        relabel();
+        evaluateVisibility(section);
+        syncBasisUnits(section);
+        return section;
+      },
+      removeLast() {
+        if (repeater.count <= 1) return;
+        container.lastElementChild.remove();
+        relabel();
+      },
+      setCount(n) {
+        while (repeater.count > n && repeater.count > 1) repeater.removeLast();
+        while (repeater.count < n) repeater.add();
+      },
+    };
+    return repeater;
   }
-
-  function wireApplyButton(root, repeater, maxCount) {
-    const btn = root.querySelector('.apply-count-btn');
-    if (!btn) return;
-    btn.addEventListener('click', () => {
-      const input = btn.closest('.field-row').querySelector('[data-kind="number"]');
-      const n = input ? parseInt(input.value, 10) : NaN;
-      if (!Number.isFinite(n) || n < 1) return;
-      const target = Math.min(n, maxCount);
-      while (repeater.count < target) repeater.add();
-      while (repeater.count > target && repeater.count > 1) repeater.removeLast();
+  function wireCompletion(completion) {
+    completion.sandBodyRepeater = makeRepeater({
+      container: completion.querySelector(':scope > .sand-body-nest > .sand-bodies-container'),
+      template: completion.querySelector(':scope > .sand-body-template'),
+      level: 'sand_body',
     });
+    completion.sandBodyRepeater.add();
   }
-
-  function wireSandBodyRepeater(completionSection) {
-    const repeater = setupRepeater({
-      container: completionSection.querySelector('.sand-bodies-container'),
-      template: completionSection.querySelector('.sand-body-template'),
-      addBtn: completionSection.querySelector('.add-sand-body-btn'),
-      maxCount: MAX_SAND_BODY,
-      labelSingular: 'Sand Body',
+  function wireLateral(lateral) {
+    lateral.completionRepeater = makeRepeater({
+      container: lateral.querySelector(':scope > .completion-nest > .completion-intervals-container'),
+      template: lateral.querySelector(':scope > .completion-interval-template'),
+      level: 'completion_interval',
+      onAdd: wireCompletion,
     });
-    completionSection.sandBodyRepeater = repeater;
-    repeater.add();
-    wireApplyButton(completionSection.querySelector('.own-fields'), repeater, MAX_SAND_BODY);
+    lateral.completionRepeater.add();
   }
-
-  const completionRepeater = setupRepeater({
-    container: document.getElementById('completion-intervals-container'),
-    template: document.getElementById('completion-interval-template'),
-    addBtn: document.getElementById('add-completion-btn'),
-    maxCount: MAX_COMPLETION,
-    labelSingular: 'Completion Interval',
-    onAdd: wireSandBodyRepeater,
+  const lateralRepeater = makeRepeater({
+    container: document.getElementById('laterals-container'),
+    template: document.getElementById('lateral-template'),
+    level: 'lateral',
+    onAdd: wireLateral,
   });
+  // Numbers and odd/even colors are recomputed from the DOM after any change,
+  // so every banner names its full path (Lateral 2 - Completion Interval 1 -
+  // Sand Body 3) and each level's colors restart inside its parent.
+  function setBlockIndex(section, n) {
+    section.classList.remove('interval-odd', 'interval-even');
+    section.classList.add(n % 2 === 1 ? 'interval-odd' : 'interval-even');
+    section.dataset.intervalIndex = n;
+    const banner = section.querySelector(':scope > .interval-banner');
+    banner.querySelector('.interval-index').textContent = n;
+    return banner;
+  }
+  function relabel() {
+    lateralBlocks().forEach((lateral, i) => {
+      setBlockIndex(lateral, i + 1);
+      completionBlocks(lateral).forEach((completion, j) => {
+        setBlockIndex(completion, j + 1).querySelector('.lateral-index').textContent = i + 1;
+        sandBodyBlocks(completion).forEach((sandBody, k) => {
+          const banner = setBlockIndex(sandBody, k + 1);
+          banner.querySelector('.lateral-index').textContent = i + 1;
+          banner.querySelector('.completion-index').textContent = j + 1;
+        });
+      });
+    });
+  }
+  function repeaterFor(level, row) {
+    if (level === 'lateral') return lateralRepeater;
+    if (level === 'completion_interval') return row.closest('.lateral-instance').completionRepeater;
+    return row.closest('.completion-instance').sandBodyRepeater;
+  }
+  function counterInput(row) { return row.querySelector('input[data-kind="number"]'); }
+  // Counters are structure, not data: a block holding only its prefilled
+  // child counter is still empty.
+  function blockHasData(section) {
+    return Array.from(section.querySelectorAll('.field-row')).some((row) =>
+      !row.querySelector('.apply-count-btn') &&
+      (readFieldValue(row) !== null || row.querySelector('.field-comment').value !== ''));
+  }
+  function rangeText(label, from, to) {
+    return from === to ? `${label} ${from}` : `${label}s ${from}–${to}`;
+  }
+  // Removing blocks deletes what was typed in them, so ask first whenever any
+  // of them has data. The list of affected blocks names exactly what goes.
+  function confirmRemoval(repeater, keep, reason) {
+    const doomed = repeater.blocks().slice(keep);
+    if (!doomed.some(blockHasData)) return true;
+    return window.confirm(`${reason} deletes ${rangeText(LEVEL_LABELS[repeater.level], keep + 1, repeater.count)} ` +
+      'and everything entered in them. Continue?');
+  }
+  // A completed export must not say "3" while 2 blocks exist, so a counter
+  // that differs from its blocks (typed but not applied) is invalid until
+  // Apply is pressed. Drafts skip validation and save it as typed.
+  function refreshCounterValidity() {
+    sandForm.querySelectorAll('.apply-count-btn').forEach((button) => {
+      const row = button.closest('.field-row');
+      const input = counterInput(row);
+      const raw = exactNumber(input);
+      const count = repeaterFor(button.dataset.role, row).count;
+      input.setCustomValidity(raw !== '' && Number(raw) !== count ?
+        `Press Apply to match: ${raw} entered, ${count} shown.` : '');
+    });
+  }
+  sandForm.addEventListener('click', (event) => {
+    const button = event.target.closest('.apply-count-btn');
+    if (!button) return;
+    const row = button.closest('.field-row');
+    const input = counterInput(row);
+    const repeater = repeaterFor(button.dataset.role, row);
+    input.value = exactNumber(input);
+    const n = Number(exactNumber(input));
+    // Check the workbook's own limits (whole number, min, max) without the
+    // "press Apply" message, which is exactly what this click resolves.
+    input.setCustomValidity('');
+    if (exactNumber(input) === '' || !input.checkValidity()) {
+      input.reportValidity();
+      refreshCounterValidity();
+      return;
+    }
+    if (n < repeater.count && !confirmRemoval(repeater, n, `Reducing ${fieldParam(row)} to ${n}`)) {
+      setNumericValue(input, String(repeater.count));
+      refreshCounterValidity();
+      return;
+    }
+    repeater.setCount(n);
+    setNumericValue(input, String(n));
+    refreshCounterValidity();
+    updateTopUnitIndicator();
+  });
+  // A well that is not multilateral is its main bore alone: Lateral 1, shown
+  // without a lateral banner. Turning the answer away from Yes removes the
+  // other laterals (after confirming if they hold data).
+  function multilateralControl() { return findParamField(wellSection, MULTILATERAL); }
+  function syncLateralMode() {
+    sandForm.classList.toggle('multi-lateral', multilateralControl().value === 'Yes');
+  }
+  function leaveMultilateral(control) {
+    if (control.value === 'Yes' || lateralRepeater.count <= 1) return true;
+    if (!confirmRemoval(lateralRepeater, 1, `Changing "${MULTILATERAL}" to ${control.value || 'blank'}`)) {
+      control.value = 'Yes';
+      return false;
+    }
+    lateralRepeater.setCount(1);
+    return true;
+  }
 
-  wellSection.addEventListener('change', (event) => {
-    if (event.target.dataset.param === 'Well type') {
+  sandForm.addEventListener('change', (event) => {
+    const target = event.target;
+    if (target.dataset.param === MULTILATERAL) leaveMultilateral(target);
+    evaluateVisibility(blockOf(target));
+    if (target.dataset.param === MULTILATERAL) syncLateralMode();
+    if (target.dataset.param === 'Well type') {
       reportBasisChange('Well type', syncBasisUnits(sandForm));
+    } else if (target.dataset.param === 'Fluid Type') {
+      reportBasisChange('Fluid Type', syncBasisUnits(target.closest('.sand-body-instance')));
+    } else if (target.matches('select.unit-select')) {
+      setFieldUnit(target, target.value);
     }
-    evaluateVisibility(wellSection);
+    refreshCounterValidity();
+    syncMaskValidity();
+    updateTopUnitIndicator();
   });
+
   evaluateVisibility(wellSection);
-  completionRepeater.add();
+  lateralRepeater.add();
   syncBasisUnits(wellSection);
-  wireApplyButton(wellSection, completionRepeater, MAX_COMPLETION);
+  syncLateralMode();
+  refreshCounterValidity();
+  syncMaskValidity();
+  updateTopUnitIndicator();
 
   // ---- collect a shared record for both file formats ----
   function readFieldValue(fieldRow) {
@@ -867,6 +1118,7 @@ JS = """
       const vals = Array.from(control.querySelectorAll('input')).map(exactNumber);
       return vals.every((v) => v === '') ? null : vals;
     }
+    if (control.dataset.kind === 'masked') return readMasked(control);
     const value = control.dataset.kind === 'number' ? exactNumber(control) : control.value;
     return value === '' ? null : value;
   }
@@ -940,36 +1192,37 @@ JS = """
   }
 
   function collectData() {
-    const well = collectBucket(wellSection);
-    const comments = { well: collectComments(wellSection), completion_intervals: [] };
-    const completion_intervals = [];
-    document.querySelectorAll('#completion-intervals-container > .completion-instance').forEach((comp) => {
-      const fields = collectBucket(comp.querySelector('.own-fields'));
-      const fieldComments = collectComments(comp.querySelector('.own-fields'));
-      const sand_bodies = [], sandComments = [];
-      comp.querySelectorAll(':scope > .sand-body-nest > .sand-bodies-container > .sand-body-instance').forEach((sb) => {
-        sand_bodies.push(collectBucket(sb));
-        sandComments.push(collectComments(sb));
-      });
-      completion_intervals.push({ fields, sand_bodies });
-      comments.completion_intervals.push({ fields: fieldComments, sand_bodies: sandComments });
+    const comments = { well: collectComments(wellSection), laterals: [] };
+    const laterals = lateralBlocks().map((lateral) => {
+      const note = { fields: collectComments(ownFields(lateral)), completion_intervals: [] };
+      comments.laterals.push(note);
+      return {
+        fields: collectBucket(ownFields(lateral)),
+        completion_intervals: completionBlocks(lateral).map((completion) => {
+          const sandBodies = sandBodyBlocks(completion);
+          note.completion_intervals.push({ fields: collectComments(ownFields(completion)),
+            sand_bodies: sandBodies.map(collectComments) });
+          return { fields: collectBucket(ownFields(completion)), sand_bodies: sandBodies.map(collectBucket) };
+        }),
+      };
     });
     return { schema_version: SCHEMA_VERSION, generated_at: new Date().toISOString(),
-      well, completion_intervals, comments };
+      well: collectBucket(wellSection), laterals, comments };
   }
 
-  // Keep the familiar long CSV layout. The final Row Type column adds
-  // structural rows so blank interval/body blocks and the timestamp survive.
-  const CSV_HEADER = ['Category', 'Subcategory', 'Parameter', 'Completion Interval', 'Sand Body',
+  // Long CSV layout: one row per field, with the block it belongs to in the
+  // Lateral / Completion Interval / Sand Body columns. Structural rows (Row
+  // Type) keep blank blocks and the timestamp.
+  const CSV_HEADER = ['Category', 'Subcategory', 'Parameter', 'Lateral', 'Completion Interval', 'Sand Body',
     'Value', 'Unit', 'Comment', 'Row Type'];
 
   function collectCsvRows(record) {
     const rows = [
-      ['', '', 'schema_version', '', '', record.schema_version, '', '', 'metadata'],
-      ['', '', 'generated_at', '', '', record.generated_at, '', '', 'metadata'],
-      ['', '', 'record_status', '', '', record.record_status, '', '', 'metadata'],
+      ['', '', 'schema_version', '', '', '', record.schema_version, '', '', 'metadata'],
+      ['', '', 'generated_at', '', '', '', record.generated_at, '', '', 'metadata'],
+      ['', '', 'record_status', '', '', '', record.record_status, '', '', 'metadata'],
     ];
-    function pushFields(root, values, comments, compIndex, sandIndex) {
+    function pushFields(root, values, comments, path) {
       walkFields(root, false, (sub, fr) => {
         const category = sub.dataset.category, subcategory = sub.dataset.subcategory, parameter = fieldParam(fr);
         const value = bucketValue(values, category, subcategory, parameter);
@@ -977,21 +1230,25 @@ JS = """
         if (value === null && comment === null) return;
         const bare = isObject(value) ? value.value : value;
         const unit = isObject(value) ? value.unit : '';
-        rows.push([category, subcategory, parameter, compIndex, sandIndex,
+        rows.push([category, subcategory, parameter, ...path,
           Array.isArray(bare) ? JSON.stringify(bare) : (bare ?? ''),
           unit, comment ?? '', 'field']);
       });
     }
-    pushFields(wellSection, record.well, record.comments.well, '', '');
-    document.querySelectorAll('#completion-intervals-container > .completion-instance').forEach((comp, i) => {
-      const index = String(i + 1), data = record.completion_intervals[i];
-      const commentData = record.comments.completion_intervals[i];
-      rows.push(['', '', '', index, '', '', '', '', 'completion_interval']);
-      pushFields(comp.querySelector('.own-fields'), data.fields, commentData.fields, index, '');
-      comp.querySelectorAll(':scope > .sand-body-nest > .sand-bodies-container > .sand-body-instance').forEach((sb, j) => {
-        const sandIndex = String(j + 1);
-        rows.push(['', '', '', index, sandIndex, '', '', '', 'sand_body']);
-        pushFields(sb, data.sand_bodies[j], commentData.sand_bodies[j], index, sandIndex);
+    pushFields(wellSection, record.well, record.comments.well, ['', '', '']);
+    lateralBlocks().forEach((lateral, i) => {
+      const l = String(i + 1), data = record.laterals[i], notes = record.comments.laterals[i];
+      rows.push(['', '', '', l, '', '', '', '', '', 'lateral']);
+      pushFields(ownFields(lateral), data.fields, notes.fields, [l, '', '']);
+      completionBlocks(lateral).forEach((completion, j) => {
+        const c = String(j + 1), comp = data.completion_intervals[j], compNotes = notes.completion_intervals[j];
+        rows.push(['', '', '', l, c, '', '', '', '', 'completion_interval']);
+        pushFields(ownFields(completion), comp.fields, compNotes.fields, [l, c, '']);
+        sandBodyBlocks(completion).forEach((sandBody, k) => {
+          const s = String(k + 1);
+          rows.push(['', '', '', l, c, s, '', '', '', 'sand_body']);
+          pushFields(sandBody, comp.sand_bodies[k], compNotes.sand_bodies[k], [l, c, s]);
+        });
       });
     });
     return rows;
@@ -999,11 +1256,11 @@ JS = """
 
   function toCsv(rows) {
     const quote = (value) => '"' + String(value).replace(/"/g, '""') + '"';
-    return [CSV_HEADER, ...rows].map((row) => row.map(quote).join(',')).join('\\r\\n');
+    return [CSV_HEADER, ...rows].map((row) => row.map(quote).join(',')).join('\r\n');
   }
 
   function parseCsv(text) {
-    const source = text.replace(/^\\uFEFF/, '');
+    const source = text.replace(/^﻿/, '');
     const rows = [], row = [];
     let cell = '', quoted = false;
     for (let i = 0; i < source.length; i += 1) {
@@ -1017,10 +1274,10 @@ JS = """
         quoted = true;
       } else if (ch === ',') {
         row.push(cell); cell = '';
-      } else if (ch === '\\r' || ch === '\\n') {
+      } else if (ch === '\r' || ch === '\n') {
         row.push(cell); cell = '';
         rows.push(row.splice(0));
-        if (ch === '\\r' && source[i + 1] === '\\n') i += 1;
+        if (ch === '\r' && source[i + 1] === '\n') i += 1;
       } else {
         cell += ch;
       }
@@ -1030,43 +1287,63 @@ JS = """
     return rows;
   }
 
+  // Field roots of the first block at each level. Every level always has at
+  // least one block, and all blocks of a level share the same fields.
+  function templateRoots() {
+    const lateral = lateralBlocks()[0];
+    const completion = completionBlocks(lateral)[0];
+    return { lateral: ownFields(lateral), completion: ownFields(completion), sandBody: sandBodyBlocks(completion)[0] };
+  }
+
   function csvToData(text) {
     const rows = parseCsv(text);
-    if (!rows.length || rows[0].join('\\0') !== CSV_HEADER.join('\\0')) {
+    if (!rows.length || rows[0].join('\0') !== CSV_HEADER.join('\0')) {
       throw new Error('CSV columns do not match this form.');
     }
     const record = { schema_version: null, generated_at: null, record_status: null,
-      well: {}, completion_intervals: [],
-      comments: { well: {}, completion_intervals: [] } };
+      well: {}, laterals: [], comments: { well: {}, laterals: [] } };
+    const roots = templateRoots();
 
-    function requiredIndex(value, maximum, label) {
+    function index(value, level) {
       const n = Number(value);
-      if (!/^[1-9]\\d*$/.test(value) || n > maximum) throw new Error('Invalid ' + label + ' index: ' + value);
-      return n;
-    }
-    function completionAt(raw) {
-      const index = requiredIndex(raw, MAX_COMPLETION, 'Completion Interval');
-      while (record.completion_intervals.length < index) {
-        record.completion_intervals.push({ fields: {}, sand_bodies: [] });
-        record.comments.completion_intervals.push({ fields: {}, sand_bodies: [] });
+      if (!/^[1-9]\d*$/.test(value) || n > LIMITS[level]) {
+        throw new Error('Invalid ' + LEVEL_LABELS[level] + ' index: ' + value);
       }
-      return index - 1;
+      return n - 1;
     }
-    function sandBodyAt(comp, raw) {
-      const index = requiredIndex(raw, MAX_SAND_BODY, 'Sand Body');
-      while (record.completion_intervals[comp].sand_bodies.length < index) {
-        record.completion_intervals[comp].sand_bodies.push({});
-        record.comments.completion_intervals[comp].sand_bodies.push({});
+    function lateralAt(raw) {
+      const i = index(raw, 'lateral');
+      while (record.laterals.length <= i) {
+        record.laterals.push({ fields: {}, completion_intervals: [] });
+        record.comments.laterals.push({ fields: {}, completion_intervals: [] });
       }
-      return index - 1;
+      return [record.laterals[i], record.comments.laterals[i]];
+    }
+    function completionAt(lRaw, cRaw) {
+      const [lateral, notes] = lateralAt(lRaw);
+      const j = index(cRaw, 'completion_interval');
+      while (lateral.completion_intervals.length <= j) {
+        lateral.completion_intervals.push({ fields: {}, sand_bodies: [] });
+        notes.completion_intervals.push({ fields: {}, sand_bodies: [] });
+      }
+      return [lateral.completion_intervals[j], notes.completion_intervals[j]];
+    }
+    function sandBodyAt(lRaw, cRaw, sRaw) {
+      const [completion, notes] = completionAt(lRaw, cRaw);
+      const k = index(sRaw, 'sand_body');
+      while (completion.sand_bodies.length <= k) {
+        completion.sand_bodies.push({});
+        notes.sand_bodies.push({});
+      }
+      return [completion.sand_bodies[k], notes.sand_bodies[k]];
     }
 
     for (const row of rows.slice(1)) {
       if (row.length !== CSV_HEADER.length) throw new Error('CSV row has the wrong number of columns.');
-      const [category, subcategory, parameter, compRaw, sandRaw, value, unit, comment, type] = row;
+      const [category, subcategory, parameter, lRaw, cRaw, sRaw, value, unit, comment, type] = row;
       if (type === 'metadata') {
         if (parameter === 'schema_version') {
-          if (!/^(0|[1-9]\\d*)$/.test(value)) throw new Error('Invalid schema version in CSV.');
+          if (!/^(0|[1-9]\d*)$/.test(value)) throw new Error('Invalid schema version in CSV.');
           record.schema_version = Number(value);
         }
         else if (parameter === 'generated_at') record.generated_at = value;
@@ -1074,25 +1351,23 @@ JS = """
         else throw new Error('Unknown CSV metadata: ' + parameter);
         continue;
       }
-      if (type === 'completion_interval') { completionAt(compRaw); continue; }
-      if (type === 'sand_body') { sandBodyAt(completionAt(compRaw), sandRaw); continue; }
+      if (type === 'lateral') { lateralAt(lRaw); continue; }
+      if (type === 'completion_interval') { completionAt(lRaw, cRaw); continue; }
+      if (type === 'sand_body') { sandBodyAt(lRaw, cRaw, sRaw); continue; }
       if (type !== 'field') throw new Error('Unknown CSV row type: ' + type);
+      if ((sRaw !== '' && cRaw === '') || (cRaw !== '' && lRaw === '')) {
+        throw new Error('A CSV row names a block without its parent: ' + parameter);
+      }
       let values = record.well, comments = record.comments.well, root = wellSection;
-      if (compRaw !== '') {
-        const comp = completionAt(compRaw);
-        const compSection = document.querySelector('#completion-intervals-container > .completion-instance');
-        if (sandRaw !== '') {
-          const sand = sandBodyAt(comp, sandRaw);
-          values = record.completion_intervals[comp].sand_bodies[sand];
-          comments = record.comments.completion_intervals[comp].sand_bodies[sand];
-          root = compSection.querySelector('.sand-body-instance');
-        } else {
-          values = record.completion_intervals[comp].fields;
-          comments = record.comments.completion_intervals[comp].fields;
-          root = compSection.querySelector('.own-fields');
-        }
-      } else if (sandRaw !== '') {
-        throw new Error('Sand Body index requires a Completion Interval index.');
+      if (sRaw !== '') {
+        const [bucket, notes] = sandBodyAt(lRaw, cRaw, sRaw);
+        values = bucket; comments = notes; root = roots.sandBody;
+      } else if (cRaw !== '') {
+        const [completion, notes] = completionAt(lRaw, cRaw);
+        values = completion.fields; comments = notes.fields; root = roots.completion;
+      } else if (lRaw !== '') {
+        const [lateral, notes] = lateralAt(lRaw);
+        values = lateral.fields; comments = notes.fields; root = roots.lateral;
       }
       const fieldRow = findFieldRow(root, category, subcategory, parameter);
       if (!fieldRow) throw new Error('Unknown CSV field: ' + parameter);
@@ -1129,7 +1404,7 @@ JS = """
 
   // Same rule as the API: a real calendar date written YYYY-MM-DD.
   function isIsoDate(value) {
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
     const parsed = new Date(value + 'T00:00:00Z');
     return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
   }
@@ -1180,6 +1455,9 @@ JS = """
             throw new Error('Invalid date for ' + parameter + ': "' + bare +
               '". Dates must be YYYY-MM-DD. If the CSV was opened and saved in Excel, ' +
               're-enter the date in that format or use the original file.');
+          } else if (control.dataset.kind === 'masked' && !parseMasked(control.dataset.mask, bare)) {
+            throw new Error('Invalid ' + parameter + ': "' + bare + '". Expected the format ' +
+              control.dataset.mask + ' (A = capital letter, # = digit).');
           } else if (control.tagName === 'SELECT') {
             let options = Array.from(control.options).map((option) => option.value);
             if (control.dataset.optionsBy) {
@@ -1206,6 +1484,17 @@ JS = """
     }
   }
 
+  function checkBlockList(list, level) {
+    if (!Array.isArray(list) || list.length < 1 || list.length > LIMITS[level]) {
+      throw new Error('Expected 1 to ' + LIMITS[level] + ' ' + LEVEL_LABELS[level] + 's.');
+    }
+  }
+  function checkSameLength(notes, blocks, level) {
+    if (!Array.isArray(notes) || notes.length !== blocks.length) {
+      throw new Error('Comment groups do not match ' + LEVEL_LABELS[level] + 's.');
+    }
+  }
+
   function validateImport(record) {
     if (!isObject(record) || record.schema_version !== SCHEMA_VERSION) {
       throw new Error('Unsupported or missing schema version. Expected ' + SCHEMA_VERSION + '.');
@@ -1214,37 +1503,37 @@ JS = """
         record.record_status !== 'draft' && record.record_status !== 'complete') {
       throw new Error('Unknown file status.');
     }
-    if (!Array.isArray(record.completion_intervals) ||
-        record.completion_intervals.length < 1 || record.completion_intervals.length > MAX_COMPLETION) {
-      throw new Error('File must contain 1 to ' + MAX_COMPLETION + ' Completion Intervals.');
+    checkBlockList(record.laterals, 'lateral');
+    if (findBucketParamValue(record.well, MULTILATERAL) !== 'Yes' && record.laterals.length !== 1) {
+      throw new Error('A well that is not multilateral must have exactly one lateral.');
     }
-    const firstComp = document.querySelector('#completion-intervals-container > .completion-instance');
-    const completionRoot = firstComp.querySelector('.own-fields');
-    const sandRoot = firstComp.querySelector('.sand-body-instance');
+    const roots = templateRoots();
     const wellType = findBucketParamValue(record.well, 'Well type');
     validateBucket(record.well, wellSection, false, wellType);
-    const comments = record.comments ?? { well: {}, completion_intervals: record.completion_intervals.map(
-      (comp) => ({ fields: {}, sand_bodies: comp.sand_bodies.map(() => ({})) })) };
-    if (!isObject(comments) || !Array.isArray(comments.completion_intervals) ||
-        comments.completion_intervals.length !== record.completion_intervals.length) {
-      throw new Error('Comment groups do not match Completion Intervals.');
-    }
+    const comments = record.comments ?? { well: {}, laterals: record.laterals.map((lateral) => ({
+      fields: {}, completion_intervals: (lateral?.completion_intervals || []).map((comp) => ({
+        fields: {}, sand_bodies: (comp?.sand_bodies || []).map(() => ({})) })) })) };
+    if (!isObject(comments)) throw new Error('Comments are not an object.');
     validateBucket(comments.well, wellSection, true);
-    record.completion_intervals.forEach((comp, i) => {
-      if (!isObject(comp) || !Array.isArray(comp.sand_bodies) ||
-          comp.sand_bodies.length < 1 || comp.sand_bodies.length > MAX_SAND_BODY) {
-        throw new Error('Each Completion Interval needs 1 to ' + MAX_SAND_BODY + ' Sand Bodies.');
-      }
-      const note = comments.completion_intervals[i];
-      if (!isObject(note) || !Array.isArray(note.sand_bodies) ||
-          note.sand_bodies.length !== comp.sand_bodies.length) {
-        throw new Error('Comment groups do not match Sand Bodies.');
-      }
-      validateBucket(comp.fields, completionRoot, false, wellType);
-      validateBucket(note.fields, completionRoot, true);
-      comp.sand_bodies.forEach((sand, j) => {
-        validateBucket(sand, sandRoot, false, wellType);
-        validateBucket(note.sand_bodies[j], sandRoot, true);
+    checkSameLength(comments.laterals, record.laterals, 'lateral');
+    record.laterals.forEach((lateral, i) => {
+      const lateralNotes = comments.laterals[i];
+      if (!isObject(lateral) || !isObject(lateralNotes)) throw new Error('Invalid Lateral ' + (i + 1) + '.');
+      validateBucket(lateral.fields, roots.lateral, false, wellType);
+      validateBucket(lateralNotes.fields, roots.lateral, true);
+      checkBlockList(lateral.completion_intervals, 'completion_interval');
+      checkSameLength(lateralNotes.completion_intervals, lateral.completion_intervals, 'completion_interval');
+      lateral.completion_intervals.forEach((comp, j) => {
+        const note = lateralNotes.completion_intervals[j];
+        if (!isObject(comp) || !isObject(note)) throw new Error('Invalid Completion Interval ' + (j + 1) + '.');
+        validateBucket(comp.fields, roots.completion, false, wellType);
+        validateBucket(note.fields, roots.completion, true);
+        checkBlockList(comp.sand_bodies, 'sand_body');
+        checkSameLength(note.sand_bodies, comp.sand_bodies, 'sand_body');
+        comp.sand_bodies.forEach((sand, k) => {
+          validateBucket(sand, roots.sandBody, false, wellType);
+          validateBucket(note.sand_bodies[k], roots.sandBody, true);
+        });
       });
     });
     return comments;
@@ -1286,6 +1575,8 @@ JS = """
               control.querySelectorAll('input').forEach((input, i) => { setNumericValue(input, bare[i]); });
             } else if (control.dataset.kind === 'number') {
               setNumericValue(control, bare);
+            } else if (control.dataset.kind === 'masked') {
+              setMasked(control, bare);
             } else {
               control.value = bare;
             }
@@ -1297,37 +1588,44 @@ JS = """
 
   function restoreData(record) {
     const comments = validateImport(record); // Check before replacing anything the user has typed.
-    while (completionRepeater.count > record.completion_intervals.length) completionRepeater.removeLast();
-    while (completionRepeater.count < record.completion_intervals.length) completionRepeater.add();
+    lateralRepeater.setCount(record.laterals.length);
     sandForm.querySelectorAll('[data-param]').forEach(clearControl);
     sandForm.querySelectorAll('.field-comment').forEach((input) => { input.value = ''; });
     fillBucket(wellSection, record.well, false);
     fillBucket(wellSection, comments.well, true);
     evaluateVisibility(wellSection);
-    document.querySelectorAll('#completion-intervals-container > .completion-instance').forEach((comp, i) => {
-      const data = record.completion_intervals[i], note = comments.completion_intervals[i];
-      const repeater = comp.sandBodyRepeater;
-      while (repeater.count > data.sand_bodies.length) repeater.removeLast();
-      while (repeater.count < data.sand_bodies.length) repeater.add();
-      fillBucket(comp.querySelector('.own-fields'), data.fields, false);
-      fillBucket(comp.querySelector('.own-fields'), note.fields, true);
-      evaluateVisibility(comp.querySelector('.own-fields'));
-      comp.querySelectorAll(':scope > .sand-body-nest > .sand-bodies-container > .sand-body-instance').forEach((sb, j) => {
-        fillBucket(sb, data.sand_bodies[j], false);
-        fillBucket(sb, note.sand_bodies[j], true);
-        evaluateVisibility(sb);
+    syncLateralMode();
+    lateralBlocks().forEach((lateral, i) => {
+      const data = record.laterals[i], notes = comments.laterals[i];
+      lateral.completionRepeater.setCount(data.completion_intervals.length);
+      fillBucket(ownFields(lateral), data.fields, false);
+      fillBucket(ownFields(lateral), notes.fields, true);
+      evaluateVisibility(ownFields(lateral));
+      completionBlocks(lateral).forEach((comp, j) => {
+        const compData = data.completion_intervals[j], compNotes = notes.completion_intervals[j];
+        comp.sandBodyRepeater.setCount(compData.sand_bodies.length);
+        fillBucket(ownFields(comp), compData.fields, false);
+        fillBucket(ownFields(comp), compNotes.fields, true);
+        evaluateVisibility(ownFields(comp));
+        sandBodyBlocks(comp).forEach((sb, k) => {
+          fillBucket(sb, compData.sand_bodies[k], false);
+          fillBucket(sb, compNotes.sand_bodies[k], true);
+          evaluateVisibility(sb);
+        });
       });
     });
     document.getElementById('basis-change-status').textContent = '';
     syncBasisUnits(sandForm); // Validated above, so this only refreshes the offered units.
+    refreshCounterValidity();
+    syncMaskValidity();
     // A mixed imported record has no saved bulk choice. New repeaters start
     // in Field units deterministically, while existing per-field units stay put.
     lastBulkSystem = unitSystemSelect.value === 'Custom' ? 'Field' : unitSystemSelect.value;
   }
 
-  // Exports are named from the well's anonymized label and identification
-  // number, so a reviewer collecting submissions can tell records apart in a
-  // download folder without opening them.
+  // Exports are named from the well's anonymized ID, so a reviewer collecting
+  // submissions can tell records apart in a download folder without opening
+  // them. A draft saved before the ID is complete is named "Unnamed".
   //
   // Repeat exports are deliberately NOT numbered here. A page cannot see the
   // download folder, so an in-page counter would count exports in this session
@@ -1335,33 +1633,9 @@ JS = """
   // export after a reload, and miss a real clash with a file saved yesterday.
   // Browsers already uniquify a colliding download themselves, which is both
   // correct and what users expect from every other download they make.
-  const ILLEGAL_FILENAME_CHARS = /[<>:"/\\\\|?*\\u0000-\\u001f]/g;
-  // Windows rejects these as a base name whatever extension follows them.
-  const RESERVED_FILENAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
-
-  // Each part is capped well short of the whole, so one long free-text label
-  // can never crowd the identification number out of the joined filename.
-  function safeFilenamePart(value) {
-    return (value || '')
-      .trim()
-      .replace(ILLEGAL_FILENAME_CHARS, '_')
-      .replace(/\\s+/g, '_')
-      .replace(/_{2,}/g, '_')
-      .slice(0, 50)
-      .replace(/^[._]+/, '')    // a leading dot hides the file on macOS/Linux
-      .replace(/[._]+$/, '');   // Windows silently strips trailing dots
-  }
-
   function exportBaseName() {
-    const nameField = findParamField(wellSection, EXPORT_NAME_PARAMS[0]);
-    const idField = findParamField(wellSection, EXPORT_NAME_PARAMS[1]);
-    // Drafts can be saved before the required well name is entered. Keep the
-    // same anonymized-name + ID pattern used by completed exports, but make
-    // the missing name explicit instead of producing an ID-only filename.
-    const name = safeFilenamePart(nameField ? nameField.value : '') || 'Unnamed';
-    const identifier = safeFilenamePart(idField ? idField.value : '');
-    const base = [name, identifier].filter((part) => part !== '').join('_');
-    return RESERVED_FILENAMES.test(base) ? 'well_' + base : base;
+    const control = findParamField(wellSection, EXPORT_NAME_PARAM);
+    return control && maskComplete(control) ? readMasked(control) : 'Unnamed';
   }
 
   function download(filename, content, mime) {
@@ -1377,6 +1651,8 @@ JS = """
     // Native validation must see the exact saved number. A rounded display
     // can otherwise hide an out-of-range value or reject a valid value near
     // a converted fractional bound (for example 0°F in Celsius).
+    refreshCounterValidity();
+    syncMaskValidity();
     const inputs = Array.from(sandForm.querySelectorAll('input[type="number"]'));
     inputs.forEach((input) => { input.value = exactNumber(input); });
     const valid = sandForm.reportValidity();
@@ -1435,16 +1711,14 @@ JS = """
 """
 
 
-def render_html(model: dict, max_completion: int = DEFAULT_MAX_COMPLETION,
-                 max_sand_bodies: int = DEFAULT_MAX_SAND_BODY,
-                 expires_on: str = DEFAULT_EXPIRES_ON) -> str:
+def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON) -> str:
     well_html = render_well_section(model)
-    completion_template_html = render_completion_template(model)
+    lateral_template_html = render_lateral_template(model)
     js = (JS.replace("__SCHEMA_VERSION__", str(CURRENT_SCHEMA_VERSION))
-            .replace("__MAX_COMPLETION__", str(max_completion))
-            .replace("__MAX_SAND_BODY__", str(max_sand_bodies))
+            .replace("__LIMITS__", json.dumps(model["limits"]))
+            .replace("__MULTILATERAL__", json.dumps(MULTILATERAL_PARAMETER))
             .replace("__EXPIRES_ON__", json.dumps(expires_on) if expires_on else "null")
-            .replace("__EXPORT_NAME_PARAMS__", json.dumps(list(EXPORT_NAME_PARAMS)))
+            .replace("__EXPORT_NAME_PARAM__", json.dumps(EXPORT_NAME_PARAM))
             .replace("__CHOICE_DISPLAY__", json.dumps(CHOICE_DISPLAY, ensure_ascii=False))
             .replace("__OIL_FVF__", json.dumps(OIL_FVF))
             .replace("__UNIT_BASIS__", json.dumps(BASIS_DRIVERS))
@@ -1483,12 +1757,8 @@ def render_html(model: dict, max_completion: int = DEFAULT_MAX_COMPLETION,
 <main>
   <form id="sand-form" onsubmit="return false;">
     {well_html}
-    <div id="completion-intervals-toolbar">
-      <h2>Completion Intervals</h2>
-      <button type="button" id="add-completion-btn">+ Add Completion Interval</button>
-    </div>
-    <div id="completion-intervals-container"></div>
-    {completion_template_html}
+    <div id="laterals-container"></div>
+    {lateral_template_html}
   </form>
 </main>
 <div class="export-bar">
@@ -1520,10 +1790,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("input", nargs="?", default=DEFAULT_INPUT, help="Path to the dictionary xlsx file")
     parser.add_argument("output", nargs="?", default=DEFAULT_OUTPUT, help="Path to write the generated HTML form")
-    parser.add_argument("--max-completion-intervals", type=int, default=DEFAULT_MAX_COMPLETION,
-                         help="Maximum number of Completion Interval blocks a user can add")
-    parser.add_argument("--max-sand-bodies", type=int, default=DEFAULT_MAX_SAND_BODY,
-                         help="Maximum number of Sand Body blocks per Completion Interval")
     parser.add_argument("--expires-on", default=DEFAULT_EXPIRES_ON,
                          help="ISO date (YYYY-MM-DD) after which the generated form locks itself "
                               "(client-side check baked in at generation time). Pass \"\" for no expiration.")
@@ -1540,16 +1806,16 @@ def main() -> None:
     if not rows:
         raise SystemExit("No rows found in the dictionary sheet.")
     model = build_model(rows)
-    html_out = render_html(model, max_completion=args.max_completion_intervals,
-                            max_sand_bodies=args.max_sand_bodies, expires_on=args.expires_on)
+    html_out = render_html(model, expires_on=args.expires_on)
 
     output_path = Path(args.output)
     output_path.write_text(html_out, encoding="utf-8")
     well_subcats = sum(len(v) for v in model["well"].values())
+    lateral_subcats = sum(len(v) for v in model["lateral"].values())
     completion_subcats = sum(len(v) for v in model["completion"].values())
     sand_body_subcats = sum(len(v) for v in model["sand_body"].values())
     print(f"Wrote {output_path} ({len(expand_conditional_rows(rows))} effective parameters: "
-          f"{well_subcats} well-scope, {completion_subcats} completion-interval-scope, "
+          f"{well_subcats} well-scope, {lateral_subcats} lateral-scope, {completion_subcats} completion-interval-scope, "
           f"{sand_body_subcats} sand-body-scope subcategories).")
 
 
