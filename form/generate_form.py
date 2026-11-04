@@ -70,7 +70,7 @@ from dictionary.conditional_fields import GAS_FVF, OIL_FVF, expand_conditional_r
 from dictionary.masks import mask_tokens  # noqa: E402
 from dictionary.structure import LEVELS, MULTILATERAL_PARAMETER, level_limits  # noqa: E402
 from dictionary.units import BASIS_DRIVERS, basis_driver, choices_for  # noqa: E402
-from form.preview_layout import PREVIEW_CSS, PREVIEW_SETUP_JS, PREVIEW_UI_JS  # noqa: E402
+from form.preview_layout import PREVIEW_CSS, PREVIEW_UI_JS  # noqa: E402
 
 DEFAULT_INPUT = REPO_ROOT / "MASTER.xlsx"
 DEFAULT_OUTPUT = Path(__file__).resolve().parent / "sand_control_form.html"
@@ -1752,19 +1752,19 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, preview: bool
         validity_notice = ""
 
     title = "Sand Control Failure Record Form (Producer Wells)"
-    css, body_attr, preview_note, outline, setup_js, ui_js = CSS, "", "", "", "", ""
+    css, body_attr, preview_note, outline, pane_open, pane_close, ui_js = CSS, "", "", "", "", "", ""
     if preview:
         title += " — Layout Preview"
         css += PREVIEW_CSS
         body_attr = ' class="preview"'
         preview_note = ('<p class="preview-note">Layout preview: the questions, rules, and files are the same as '
                         'in the current form, and a file saved in either one opens in the other.</p>')
-        outline = ('<nav id="outline" aria-label="Form outline"><h2>Outline</h2>'
-                   '<div class="outline-actions"><button type="button" id="expand-all">Expand all</button>'
-                   '<button type="button" id="collapse-all">Collapse all</button></div>'
+        outline = ('<nav id="outline" aria-label="Form sections"><h2>Form sections</h2>'
                    '<div id="problems" role="status" aria-live="polite" hidden></div>'
                    '<ul id="outline-list"></ul></nav>')
-        setup_js = f"<script>{PREVIEW_SETUP_JS}</script>\n"
+        pane_open = '<div class="pane"><div id="pane-head"><nav id="pane-crumbs" aria-label="Current section"></nav></div>'
+        pane_close = ('<div id="pane-foot"><button type="button" id="prev-item"></button>'
+                      '<button type="button" id="next-item"></button></div></div>')
         ui_js = f"\n<script>{PREVIEW_UI_JS}</script>"
 
     return f"""<!doctype html>
@@ -1791,11 +1791,11 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, preview: bool
   </p>
 </header>
 <main>
-  {outline}<form id="sand-form" onsubmit="return false;">
+  {outline}{pane_open}<form id="sand-form" onsubmit="return false;">
     {well_html}
     <div id="laterals-container"></div>
     {lateral_template_html}
-  </form>
+  </form>{pane_close}
 </main>
 <div class="export-bar">
   <input type="file" id="import-file" accept=".json,.csv,application/json,text/csv" hidden>
@@ -1816,7 +1816,7 @@ def render_html(model: dict, expires_on: str = DEFAULT_EXPIRES_ON, preview: bool
   </details>
   <p id="import-status" role="status" aria-live="polite"></p>
 </div>
-{setup_js}<script>{js}</script>{ui_js}
+<script>{js}</script>{ui_js}
 </body>
 </html>
 """
