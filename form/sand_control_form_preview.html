@@ -91,16 +91,16 @@ select.unit-select { width: 100%; padding: .3rem .2rem; }
   width: 15px; height: 15px; border-radius: 50%; background: #8896a6; color: #fff;
   font-size: .68rem; font-weight: bold; cursor: help; position: relative; flex: 0 0 auto;
 }
-.tt:hover::after, .tt:focus::after {
-  content: attr(data-tip); position: absolute; left: 0; bottom: 130%;
-  background: #1f2328; color: #fff; padding: .4rem .6rem; border-radius: 4px; font-size: .75rem;
-  font-weight: normal; white-space: normal; width: 220px; line-height: 1.35; z-index: 30;
-  box-shadow: 0 2px 8px rgba(0,0,0,.3);
-}
-.tt:hover::before, .tt:focus::before {
-  content: ''; position: absolute; left: 3px; bottom: 115%;
-  border: 5px solid transparent; border-top-color: #1f2328; z-index: 30;
-}
+/* One shared tooltip, placed on the page itself by TOOLTIP_JS. Drawn inside
+   a section it would be clipped by that section's overflow:hidden (which
+   rounds its corners), whatever its z-index. */
+#tooltip { position: fixed; z-index: 1000; max-width: 260px; background: #1f2328; color: #fff;
+  padding: .4rem .6rem; border-radius: 4px; font-size: .75rem; line-height: 1.35;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3); pointer-events: none; }
+#tooltip[hidden] { display: none; }
+#tooltip::after { content: ''; position: absolute; left: var(--arrow-left, 10px); border: 5px solid transparent; }
+#tooltip[data-side="above"]::after { top: 100%; border-top-color: #1f2328; }
+#tooltip[data-side="below"]::after { bottom: 100%; border-bottom-color: #1f2328; }
 select, input[type=text], input[type=number], input[type=date], textarea {
   width: 100%; padding: .35rem .5rem; border: 1px solid #aaa; border-radius: 4px; font: inherit; background: #fff;
 }
@@ -1801,6 +1801,59 @@ body.preview { font-family: "Segoe UI", Arial, Helvetica, sans-serif; background
   }, { passive: true });
   render();
   spy();
+})();
+</script>
+<script>
+(function () {
+  const tip = document.createElement('div');
+  tip.id = 'tooltip';
+  tip.setAttribute('role', 'tooltip');
+  tip.hidden = true;
+  document.body.appendChild(tip);
+  let owner = null;
+  function show(icon) {
+    owner = icon;
+    tip.textContent = icon.dataset.tip;
+    tip.hidden = false;
+    icon.setAttribute('aria-describedby', 'tooltip');
+    const gap = 8, margin = 8;
+    const box = icon.getBoundingClientRect();
+    const width = tip.offsetWidth, height = tip.offsetHeight;
+    const above = box.top - gap - height >= margin;
+    const left = Math.max(margin, Math.min(box.left - 4, window.innerWidth - width - margin));
+    tip.dataset.side = above ? 'above' : 'below';
+    tip.style.left = left + 'px';
+    tip.style.top = (above ? box.top - gap - height : box.bottom + gap) + 'px';
+    tip.style.setProperty('--arrow-left', Math.max(4, box.left + box.width / 2 - left - 5) + 'px');
+  }
+  function hide() {
+    if (owner) owner.removeAttribute('aria-describedby');
+    owner = null;
+    tip.hidden = true;
+  }
+  document.addEventListener('mouseover', (event) => {
+    const icon = event.target.closest && event.target.closest('.tt');
+    if (icon && icon !== owner) show(icon);
+  });
+  document.addEventListener('mouseout', (event) => {
+    const icon = event.target.closest && event.target.closest('.tt');
+    if (icon && !icon.contains(event.relatedTarget) && document.activeElement !== icon) hide();
+  });
+  document.addEventListener('focusin', (event) => { if (event.target.matches('.tt')) show(event.target); });
+  document.addEventListener('focusout', (event) => { if (event.target === owner) hide(); });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') hide(); });
+  let queued = false;
+  window.addEventListener('scroll', () => {
+    if (!owner || queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      if (!owner) return;
+      const box = owner.getBoundingClientRect();
+      if (!owner.isConnected || box.bottom < 0 || box.top > window.innerHeight) hide();
+      else show(owner);
+    });
+  }, { passive: true });
 })();
 </script>
 </body>
